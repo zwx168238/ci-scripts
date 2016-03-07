@@ -1,0 +1,35 @@
+Build:
+    # parameters for the build 
+    Distro:
+        - Ubuntu
+
+    Platform:
+        - D02
+
+# the dictionary for the board and arch mapping
+Arch:
+    d03: arm64
+    d02: arm64
+    d01: arm32
+
+# for lava connection 
+LAVA:
+    USER: htsat
+    HOST: 192.168.1.106
+    TOKEN: p53l26plbujbqaicsrkw0i1u3xu5qawxlx3imr41w3eiwg1y79jxtjkx209p2kccsc1obzy279c7ruydhskzotdlf6s3me0wb87o0rf71m0sehetlje9p0cr0dorkhf8
+    lavaserver: http://192.168.1.106/RPC2/
+    lavastream: /anonymous/default/
+    lavauser: default
+
+# for lava job parameter
+Jenkins:
+    Boot: boot
+    App:
+        - WEEKLY_TESTING
+        - TEST
+
+# for kernelci access
+Kernelci:
+    server: http://192.168.108:8083
+    token: 3eda8013-da37-42ea-b9a0-7a66badd1b68
+    ftpserver: http://192.168.1.108:8083

@@ -65,7 +65,7 @@ def download(lists):
     
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "d:j:u:t")
+        opts, args = getopt.getopt(sys.argv[1:], "d:j:u:t:")
     except getopt.GetoptError as err:
         print str(err)
         sys.exit(2)

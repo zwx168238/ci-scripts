@@ -15,6 +15,10 @@ kernel = None
 platform_list = []
 legacy_platform_list = []
 
+arch_distro = {'d01': ['Ubuntu_ARM32.tar.gz'],
+               'd02': ['Fedora_ARM64.tar.gz', 'Ubuntu_ARM64.tar.gz',
+                   'Debian_ARM64.tar.gz', 'OpenSuse_ARM64.tar.gz']}
+
 panda_es = {'device_type': 'panda-es',
             'templates': ['generic-arm-dtb-kernel-ci-boot-template.json',
                           'generic-arm-dtb-kernel-ci-kselftest-template.json',
@@ -61,6 +65,8 @@ d01 = {'device_type': 'd01',
 
 d02 = {'device_type': 'd02',
 		'templates': ['d02-arm64-kernel-ci-boot-template.json',
+                              'd02-arm64-kernel-ci-boot-sata-template.json',
+                              'd02-arm64-kernel-ci-boot-nfs-template.json',
 			      'd02-arm64-kernel-ci-weekly-template.json'],
 		'defconfig_blacklist': ['arm64-allnoconfig',
 					'arm64-allmodconfig'],
@@ -185,7 +191,28 @@ def setup_job_dir(directory):
     #    os.makedirs(directory)
     print 'Done setting up JSON output directory'
 
-def create_jobs(base_url, kernel, plans, platform_list, targets, priority):
+# add by wuyanjun  2016/3/9
+distro_list = []
+def get_nfs_url(distro_url, device_type):
+    parse_re = re.compile('href="([^./"?][^"?]*)"')
+    try:
+        html = urllib2.urlopen(distro_url, timeout=30).read()
+    except IOError, e:
+        print 'error reading %s: %s' % (url, e)
+        exit(1)
+    if not distro_url.endswith('/'):
+        distro_url += '/'
+    files= parse_re.findall(html)
+    dirs = []
+    for name in files:
+        if not name.endswith('/'):
+            dirs += [name]
+        if name.endswith('.tar.gz') and 'distro' in distro_url+name and device_type in distro_url+name:
+            distro_list.append(distro_url+name)
+        for direc in dirs:
+            get_nfs_url(distro_url+direc, device_type)
+
+def create_jobs(base_url, kernel, plans, platform_list, targets, priority, distro_url):
     print 'Creating JSON Job Files...'
     cwd = os.getcwd()
     url = urlparse.urlparse(kernel)
@@ -198,7 +225,6 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority):
     defconfig = build_info[3]
     has_modules = True
     checked_modules = False
-
     for platform in platform_list:
         platform_name = platform.split('/')[-1]
         for device in device_map[platform_name]:
@@ -212,7 +238,7 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority):
             test_type = None
             defconfigs = []
             for plan in plans:
-                if plan != 'boot':
+                if 'boot' in plan or 'BOOT' in plan:
                     config = ConfigParser.ConfigParser()
                     try:
                         config.read(cwd + '/templates/' + plan + '/' + plan + '.ini')
@@ -261,12 +287,13 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority):
                                         tmp = line.replace('{dtb_url}', platform)
                                         tmp = tmp.replace('{kernel_url}', kernel)
                                         # add by wuyanjun
-                                        if plan != 'boot':
-                                            tmp = tmp.replace('{device_type}', 'dummy-ssh')
+                                        if 'boot' not in plan and 'BOOT' not in plan:
+                                            tmp = tmp.replace('{device_type}', 'dummy_ssh'+'_'+device_type)
                                         else:
                                             tmp = tmp.replace('{device_type}', device_type)
                                         tmp = tmp.replace('{job_name}',\
                                                 job_json.split("/")[-1].split(".json")[0])
+                                        # end by wuyanjun
                                         tmp = tmp.replace('{image_type}', image_type)
                                         tmp = tmp.replace('{image_url}', image_url)
                                         modules_url = image_url + 'modules.tar.xz'
@@ -313,10 +340,31 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority):
                                         else:
                                             tmp = tmp.replace('{priority}', 'high')
                                         fout.write(tmp)
+                            # add by wuyanjun 2016/3/8
+                            with open(job_json, 'rb') as temp:
+                                whole_lines = temp.read()
+                            if re.findall('nfs_url', whole_lines):
+                                get_nfs_url(distro_url, device_type)
+                                if len(distro_list):
+                                    fill_nfs_url(job_json, distro_list, device_type)
                             print 'JSON Job created: jobs/%s' % job_json.split('/')[-1]
 
+def fill_nfs_url(job_json, distro_list, device_type):
+    select_distro = [ x for x in distro_list if x.split('/')[-1] in arch_distro[device_type]]
+    for distro in distro_list:
+        rootfs = re.findall("(.*?).tar.gz", distro.split('/')[-1])
+        rootfs_name = rootfs[0]
+        modified_file = job_json.split('.json')[0] + '-' + rootfs_name + '.json'
+        with open(modified_file, 'wt') as fout:
+            with open(job_json, "rt") as fin:
+                for line in fin:
+                    tmp = line.replace('{nfs_url}', distro)
+                    fout.write(tmp)
+            print 'JSON Job created: jobs/%s' % modified_file.split('/')[-1]
+    if os.path.exists(job_json):
+        os.remove(job_json)
 
-def walk_url(url, plans=None, arch=None, targets=None, priority=None):
+def walk_url(url, distro_url, plans=None, arch=None, targets=None, priority=None):
     global base_url
     global kernel
     global platform_list
@@ -351,9 +399,6 @@ def walk_url(url, plans=None, arch=None, targets=None, priority=None):
             if 'Image' in name:
                 kernel = url + name
                 base_url = url
-                # qemu-aarch64,legacy
-                #if 'arm64-defconfig' in url:
-                #    legacy_platform_list.append(url + 'qemu-aarch64-legacy')
             if name.endswith('.dtb') and name in device_map:
                 if base_url and base_url in url:
                     platform_list.append(url + name)
@@ -377,18 +422,16 @@ def walk_url(url, plans=None, arch=None, targets=None, priority=None):
             if 'Image' in name and 'arm64' in url:
                 kernel = url + name
                 base_url = url
-                # qemu-aarch64,legacy
-                #if 'arm64-defconfig' in url:
-                #    legacy_platform_list.append(url + 'qemu-aarch64-legacy')
             if name.endswith('.dtb') and name in device_map:
                 if base_url and base_url in url:
                     platform_list.append(url + name)
-
+        if 'distro' in name:
+            distro_url = url + name
     if kernel is not None and base_url is not None:
         if platform_list:
             print 'Found artifacts at: %s' % base_url
             create_jobs(base_url, kernel, plans, platform_list, targets,
-                        priority)
+                        priority, distro_url)
             # Hack for subdirectories with arm64 dtbs
             if 'arm64' not in base_url:
                 base_url = None
@@ -397,18 +440,18 @@ def walk_url(url, plans=None, arch=None, targets=None, priority=None):
         elif legacy_platform_list:
             print 'Found artifacts at: %s' % base_url
             create_jobs(base_url, kernel, plans, legacy_platform_list, targets,
-                        priority)
+                        priority, distro_url)
             legacy_platform_list = []
 
     for dir in dirs:
-        walk_url(url + dir, plans, arch, targets, priority)
+        walk_url(url + dir, distro_url, plans, arch, targets, priority)
 
 def main(args):
     config = configuration.get_config(args)
 
     setup_job_dir(os.getcwd() + '/jobs')
     print 'Scanning %s for kernel information...' % config.get("url")
-    walk_url(config.get("url"), config.get("plans"), config.get("arch"), config.get("targets"), config.get("priority"))
+    walk_url(config.get("url"), config.get("url"), config.get("plans"), config.get("arch"), config.get("targets"), config.get("priority"))
     print 'Done scanning for kernel information'
     print 'Done creating JSON jobs'
     exit(0)

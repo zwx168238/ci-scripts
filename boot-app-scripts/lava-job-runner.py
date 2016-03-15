@@ -63,7 +63,7 @@ def poll_jobs(connection, timeout):
                     break
                 else:
                     print str(submitted_jobs[job]) + ' - ' + str(status['job_status'])
-                    time.sleep(10)
+                    time.sleep(30)
             except (xmlrpclib.ProtocolError, xmlrpclib.Fault, IOError, httplib.ResponseNotReady) as e:
                 print "POLLING ERROR!"
                 print e

@@ -576,7 +576,7 @@ def boot_report(config):
     # add by wuyanjun
     if results and directory:
         parser_and_get_result(results, directory, report_directory)
-        #get_ip_board_mapping(results, directory, report_directory)
+        get_ip_board_mapping(results, directory, report_directory)
 
     # dt-self-test
     if results and kernel_tree and kernel_version and dt_tests:

@@ -68,7 +68,6 @@ def parse_json(json):
     jobs.pop('server')
     return connection, jobs, duration
 
-
 def push(method, url, data, headers):
     retry = True
     while retry:
@@ -127,7 +126,7 @@ def get_plans(directory, filename):
             root_dir = os.path.join(root_dir, os.path.pardir)
         root_dir = os.path.abspath(root_dir)
         for item in m:
-            for root, dirs, files in os.walk(os.path.join(root_dir, "templates")):
+            for root, dirs, files in os.walk(os.path.join(root_dir, "boot-app-scripts", "templates")):
                 for dir_item in dirs:
                     if dir_item == item:
                        return item

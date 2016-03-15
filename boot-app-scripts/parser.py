@@ -24,10 +24,14 @@ summary_post = '_summary.txt'
 board_pre = 'board#'
 whole_summary_name = 'whole_summary.txt'
 match_str = '[A-Z]+_?[A-Z]*'
+ip_address = 'device_ip_type.txt'
 
 def summary_for_kind(result_dir):
     for root, dirs, files in os.walk(result_dir):
         for filename in files:
+            if ip_address == filename:
+                os.remove(os.path.join(root, filename))
+                continue
             if filename.endswith(whole_summary_name):
                 continue
             if 'boot' in filename or 'BOOT' in filename:
@@ -129,7 +133,7 @@ def parser_all_files(result_dir):
     # summary each file for each kind of board
     if os.path.exists(parser_result):
         summary_for_board(result_dir, parser_result)
-    shutil.move(parser_result, result_dir)
+        shutil.move(parser_result, result_dir)
 
 if __name__ == '__main__':
     try:

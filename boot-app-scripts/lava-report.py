@@ -486,10 +486,11 @@ def boot_report(config):
     else:
         report_directory = results_directory
 
-    if results and kernel_tree and kernel_version and 'boot' in test_plan or 'BOOT' in test_plan:
+    if results and kernel_tree and kernel_version:
         print 'Creating summary for %s' % (kernel_version)
         boot = '%s-boot-report.txt' % (kernel_version)
-        boot = boot.replace('boot', test_plan)
+        if test_plan and ('boot' in test_plan or 'BOOT' in test_plan):
+            boot = boot.replace('boot', test_plan)
         passed = 0
         failed = 0
         for defconfig, results_list in results.items():

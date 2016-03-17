@@ -1,0 +1,312 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description>&lt;!-- Managed by Jenkins Job Builder --&gt;</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.plugins.disk__usage.DiskUsageProperty plugin="disk-usage@0.28"/>
+    <jenkins.model.BuildDiscarderProperty>
+      <strategy class="hudson.tasks.LogRotator">
+        <daysToKeep>30</daysToKeep>
+        <numToKeep>3000</numToKeep>
+        <artifactDaysToKeep>-1</artifactDaysToKeep>
+        <artifactNumToKeep>-1</artifactNumToKeep>
+      </strategy>
+    </jenkins.model.BuildDiscarderProperty>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.StringParameterDefinition>
+          <name>TREE_NAME</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>GIT_DESCRIBE</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>SHELL_PLATFORM</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>SHELL_DISTRO</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>BOOT_PLAN</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>APP_PLAN</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>USER</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>HOST</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>LAVA_SERVER</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>LAVA_USER</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>LAVA_STREAM</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>LAVA_TOKEN</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>FTP_SERVER</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>KERNELCI_SERVER</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>KERNELCI_TOKEN</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>ARCH_MAP</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>TFTP_DIR</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@2.4.0">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <name>origin</name>
+        <refspec>+refs/heads/master:refs/remotes/origin/master</refspec>
+        <url>https://github.com/open-estuary/ci-scripts.git</url>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>master</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="list"/>
+    <extensions>
+      <hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
+        <relativeTargetDir>local/lava-ci</relativeTargetDir>
+      </hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
+      <hudson.plugins.git.extensions.impl.CloneOption>
+        <shallow>true</shallow>
+        <reference></reference>
+      </hudson.plugins.git.extensions.impl.CloneOption>
+    </extensions>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>#!/bin/bash
+set -x
+
+function generate_jobs()
+{
+	test_name=$1
+    python lava-kernel-ci-job-creator.py $FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}/binary/ --plans $test_name
+    if [ $? -ne 0 ]; then
+    	echo &quot;create the boot jobs error! Aborting&quot;
+       	exit -1
+    fi
+}
+
+function run_and_report_jobs()
+{
+	cd jobs
+	python ../lava-job-runner.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM --poll POLL
+	cd ..
+	if [ ! -f jobs/results/POLL ]; then
+		echo &quot;Running the boot jobs error! Aborting&quot;
+    	exit -1
+	fi
+	python lava-report.py --boot jobs/results/POLL --lab $LAVA_USER --api $KERNELCI_SERVER --token $KERNELCI_TOKEN
+
+	if [ ! -d results ]; then
+		echo &quot;running the boot jobs error! Aborting&quot; 
+		exit -1
+	fi
+}
+
+function judge_pass_or_not()
+{
+	FAIL_FLAG=$(grep -R &apos;FAIL&apos; ./jobs/results/POLL)
+	if [ &quot;$FAIL_FLAG&quot;x != &quot;&quot;x ]; then
+		echo &quot;boot job fail&quot;
+	    exit -1
+	fi
+
+	PASS_FLAG=$(grep -R &apos;PASS&apos; ./jobs/results/POLL)
+	if [ &quot;$PASS_FLAG&quot;x = &quot;&quot;x ]; then
+		echo &quot;boot job fail&quot;
+	    exit -1
+	fi
+}
+
+#######  Begining the tests ######
+current_path=$(pwd)
+
+DEVCCE_IP=&apos;device_ip_type.txt&apos;
+
+cd local/lava-ci/boot-app-scripts
+rm -fr jobs
+
+test -d jobs &amp;&amp; rm -fr jobs
+test -d jobs_boot &amp;&amp; rm -fr jobs_boot
+test -d jobs_SATA_boot &amp;&amp; rm -fr jobs_SATA_boot
+test -d results &amp;&amp; rm -fr results
+test -d results_boot &amp;&amp; rm -fr results_boot
+test -d results_SATA_boot &amp;&amp; rm -fr results_SATA_boot
+test -d $GIT_DESCRIBE &amp;&amp; rm -fr $GIT_DESCRIBE
+
+read -a arch &lt;&lt;&lt; $(echo $ARCH_MAP)
+declare -A dict
+for((i=0; i&lt;${#arch[@]}; i++))
+do
+    if ((i%2==0)); then
+        j=`expr $i+1`
+        dict[${arch[$i]}]=${arch[$j]}
+    fi      
+done
+
+SHELL_PLATFORM=&quot;$(echo $SHELL_PLATFORM | tr &apos;[:upper:]&apos; &apos;[:lower:]&apos;)&quot;
+
+##### copy some files to the lava-server machine to support the boot proces #####
+set -e
+echo $TFTP_DIR
+scp download_all_file.py  $USER@$HOST:$TFTP_DIR
+ssh $HOST -l $USER  &quot;cd $TFTP_DIR; test -d download &amp;&amp; rm -fr download; mkdir download;&quot;
+ssh $HOST -l $USER  &quot;cd $TFTP_DIR/download; python ../download_all_file.py -u $FTP_SERVER -t $KERNELCI_TOKEN -d $GIT_DESCRIBE -j $TREE_NAME;&quot;
+ssh $HOST -l $USER  &quot;cd $TFTP_DIR/download; cp *dtb ~/; rm -fr download_all_file.py; &quot;
+set +e
+##### Finish copying files to the lava-server machine #####
+
+# generate the boot jobs for all the targets
+for PLAT in $SHELL_PLATFORM 
+do
+	echo $PLAT
+    board_arch=${dict[$PLAT]}
+    generate_jobs $BOOT_PLAN
+
+done
+# create the boot jobs for each target and run all these jobs
+cd jobs
+python ../create_boot_job.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM
+if [ $? -ne 0 ]; then
+	echo &quot;generate the jobs according the board devices error! Aborting&quot;
+	exit -1
+fi
+cd ..
+run_and_report_jobs 
+[ $? -ne 0 ] &amp;&amp; exit -1
+judge_pass_or_not
+[ $? -ne 0 ] &amp;&amp; exit -1
+mv results results_$BOOT_PLAN
+mv jobs jobs_$BOOT_PLAN
+
+##### Entering the sata disk rootfs #####
+BOOT_FOR_TEST=BOOT_SATA
+# generate the boot jobs for all the targets
+for PLAT in $SHELL_PLATFORM 
+do
+    board_arch=${dict[$PLAT]}
+    generate_jobs $BOOT_FOR_TEST
+    [ $? -ne 0 ] &amp;&amp; exit -1
+done
+run_and_report_jobs 
+[ $? -ne 0 ] &amp;&amp; exit -1
+judge_pass_or_not
+[ $? -ne 0 ] &amp;&amp; exit -1
+mv results results_${BOOT_FOR_TEST}
+mv jobs jobs_${BOOT_FOR_TEST}
+##### End of entering the sata disk #####
+
+
+#####  modify the ip address according to the boot information
+ssh $HOST -l $USER  &quot;cd /etc/lava-dispatcher/devices; rm -fr $DEVCCE_IP&quot;
+scp results_BOOT_SATA/default/$DEVCCE_IP $USER@$HOST:/etc/lava-dispatcher/devices
+scp modify_conf_file.sh  $USER@$HOST:/etc/lava-dispatcher/devices
+ssh $HOST -l $USER  &quot;cd /etc/lava-dispatcher/devices; ./modify_conf_file.sh&quot;
+
+# generate the application jobs for the board_types 
+for PLAT in $SHELL_PLATFORM
+do
+    board_arch=${dict[$PLAT]}
+    #create application jobs
+    for app_plan in $APP_PLAN
+    do
+    	generate_jobs $app_plan
+    done
+done
+
+# run applications jobs and get the results
+run_and_report_jobs 
+[ $? -ne 0 ] &amp;&amp; exit -1
+
+mkdir $GIT_DESCRIBE/results
+test -d jobs &amp;&amp; mv jobs $GIT_DESCRIBE/results
+test -d jobs_$BOOT_PLAN &amp;&amp; mv jobs_$BOOT_PLAN $GIT_DESCRIBE/results
+test -d jobs_BOOT_SATA &amp;&amp; mv jobs_BOOT_SATA $GIT_DESCRIBE/results
+test -d results &amp;&amp; mv results $GIT_DESCRIBE/results
+test -d results_$BOOT_PLAN &amp;&amp; mv results_boot $GIT_DESCRIBE/results
+test -d results_BOOT_SATA &amp;&amp; mv results_BOOT_SATA $GIT_DESCRIBE/results
+
+python parser.py  $GIT_DESCRIBE
+
+# push the binary files to the ftpserver
+sudo python publish.py -j $TREE_NAME -d ./$GIT_DESCRIBE -p $PLATFORM
+
+cd $current_path
+</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.tasks.Mailer plugin="mailer@1.16">
+      <recipients>wuyanjun1027@163.com  1124281517@qq.com</recipients>
+      <dontNotifyEveryUnstableBuild>false</dontNotifyEveryUnstableBuild>
+      <sendToIndividuals>false</sendToIndividuals>
+    </hudson.tasks.Mailer>
+  </publishers>
+  <buildWrappers>
+    <hudson.plugins.timestamper.TimestamperBuildWrapper plugin="timestamper@1.7.2"/>
+  </buildWrappers>
+</project>

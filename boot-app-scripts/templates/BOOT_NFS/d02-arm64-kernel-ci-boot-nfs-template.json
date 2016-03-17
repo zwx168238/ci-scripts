@@ -17,7 +17,6 @@
                 "dtb": "{dtb_url}",
                 "bootloadertype": "uefi",
                 "kernel": "{kernel_url}",
-                "overlays": ["{modules_url}"],
                 "nfsrootfs": "{nfs_url}"
             }
         },

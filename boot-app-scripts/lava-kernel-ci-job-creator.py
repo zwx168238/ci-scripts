@@ -212,7 +212,7 @@ def get_nfs_url(distro_url, device_type):
         for direc in dirs:
             get_nfs_url(distro_url+direc, device_type)
 
-def create_jobs(base_url, kernel, plans, platform_list, targets, priority, distro_url):
+def create_jobs(base_url, kernel, plans, platform_list, targets, priority, distro_url, distro="Ubuntu"):
     print 'Creating JSON Job Files...'
     cwd = os.getcwd()
     url = urlparse.urlparse(kernel)
@@ -325,6 +325,8 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority, distr
                                             tmp = tmp.replace('{endian}', 'little')
                                         tmp = tmp.replace('{defconfig}', defconfig)
                                         tmp = tmp.replace('{fastboot}', str(fastboot).lower())
+                                        #pdb.set_trace()
+                                        tmp = tmp.replace('{distro_name}', distro)
                                         if plan:
                                             tmp = tmp.replace('{test_plan}', plan)
                                         if test_suite:
@@ -364,7 +366,7 @@ def fill_nfs_url(job_json, distro_list, device_type):
     if os.path.exists(job_json):
         os.remove(job_json)
 
-def walk_url(url, distro_url, plans=None, arch=None, targets=None, priority=None):
+def walk_url(url, distro_url, plans=None, arch=None, targets=None, priority=None, distro="Ubuntu"):
     global base_url
     global kernel
     global platform_list
@@ -431,7 +433,7 @@ def walk_url(url, distro_url, plans=None, arch=None, targets=None, priority=None
         if platform_list:
             print 'Found artifacts at: %s' % base_url
             create_jobs(base_url, kernel, plans, platform_list, targets,
-                        priority, distro_url)
+                        priority, distro_url, distro)
             # Hack for subdirectories with arm64 dtbs
             if 'arm64' not in base_url:
                 base_url = None
@@ -440,18 +442,22 @@ def walk_url(url, distro_url, plans=None, arch=None, targets=None, priority=None
         elif legacy_platform_list:
             print 'Found artifacts at: %s' % base_url
             create_jobs(base_url, kernel, plans, legacy_platform_list, targets,
-                        priority, distro_url)
+                        priority, distro_url, distro)
             legacy_platform_list = []
 
     for dir in dirs:
-        walk_url(url + dir, distro_url, plans, arch, targets, priority)
+        walk_url(url + dir, distro_url, plans, arch, targets, priority, distro)
 
 def main(args):
     config = configuration.get_config(args)
 
     setup_job_dir(os.getcwd() + '/jobs')
     print 'Scanning %s for kernel information...' % config.get("url")
-    walk_url(config.get("url"), config.get("url"), config.get("plans"), config.get("arch"), config.get("targets"), config.get("priority"))
+    distro = config.get("distro")
+    if distro is None:
+        distro = "Ubuntu"
+    walk_url(config.get("url"), config.get("url"), config.get("plans"), config.get("arch"),
+            config.get("targets"), config.get("priority"), distro)
     print 'Done scanning for kernel information'
     print 'Done creating JSON jobs'
     exit(0)
@@ -466,5 +472,7 @@ if __name__ == '__main__':
     parser.add_argument("--targets", nargs='+', help="specific targets to create jobs for")
     parser.add_argument("--priority", choices=['high', 'medium', 'low', 'HIGH', 'MEDIUM', 'LOW'],
                         help="priority for LAVA jobs")
+    parser.add_argument("--distro", choices=['Ubuntu', 'OpenSuse', 'Debian', 'Fedora'],
+                        help="distro for sata deploying")
     args = vars(parser.parse_args())
     main(args)

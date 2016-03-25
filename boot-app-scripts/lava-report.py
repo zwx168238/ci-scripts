@@ -182,7 +182,7 @@ def get_ip_board_mapping(results, directory, report_directory):
                 with open(ip_address_path, 'a') as sf:
                     with open(os.path.join(root, filename)) as fp:
                         mult_lines = fp.read()
-                        match = re.findall('eth.*?(\d+\.\d+\.\d+\.\d+)', mult_lines)
+                        match = re.findall('addr:(\d+\.\d+\.\d+\.\d+)\s+Bcast', mult_lines)
                         if match:
                             board_type = get_board_type(root, filename)
                             board_instance = get_board_instance(root, filename)

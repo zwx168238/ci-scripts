@@ -14,6 +14,9 @@
 1.4 Install the file server 
 The file server is mainly used to store the bianry files which will be used for the lava jobs. The installation is in the file named of ci-scripts/install-scripts/fileserver_install.sh. The fileserver use ngnix to provide the service. 
 
+1.5 Install the tftp server
+The lava server needs the tftp service to make the board can boot successfully. So the tftp service need to deploy in the LAVA instance. That means you need to install dhcp service, nfs service and ftp service.
+
 About the Estuary jobs: 
   estuary-trigger: For automatically trigger the build of estuary
   estuary-build: to build all the platforms and all distros

@@ -22,12 +22,87 @@
           <defaultValue></defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
-          <name>PUBLISH</name>
+          <name>SHELL_PLATFORM</name>
           <description></description>
           <defaultValue></defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
-          <name>ARCH_LIST</name>
+          <name>SHELL_DISTRO</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>VERSION</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>BOOT_PLAN</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>APP_PLAN</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>USER</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>HOST</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>LAVA_SERVER</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>LAVA_USER</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>LAVA_STREAM</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>LAVA_TOKEN</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>KERNELCI_TOKEN</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>KERNELCI_SERVER</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>FTP_SERVER</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>ARCH_MAP</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>TFTP_DIR</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>FTP_DIR</name>
           <description></description>
           <defaultValue></defaultValue>
         </hudson.model.StringParameterDefinition>
@@ -66,10 +141,30 @@
     <hudson.tasks.Shell>
       <command>#!/bin/bash
 
-echo $GIT_DESCRIBE
-echo $ARCH_MAP
-echo $TFTP_DIR
-bash -x ./local/jenkins-CI-testing/build-scripts/build-complete.sh</command>
+bash -x ./local/jenkins-CI-testing/build-scripts/build-complete.sh
+
+export
+
+cat &lt;&lt; EOF &gt; ${WORKSPACE}/env.properties
+GIT_DESCRIBE=$GIT_DESCRIBE
+SHELL_PLATFORM=$SHELL_PLATFORM
+SHELL_DISTRO=$SHELL_DISTRO
+BOOT_PLAN=$BOOT_PLAN
+APP_PLAN=$APP_PLAN
+USER=$USER
+HOST=$HOST
+LAVA_SERVER=$LAVA_SERVER
+LAVA_USER=$LAVA_USER
+LAVA_STREAM=$LAVA_STREAM
+LAVA_TOKEN=$LAVA_TOKEN
+KERNELCI_SERVER=$KERNELCI_SERVER
+KERNELCI_TOKEN=$KERNELCI_TOKEN
+FTP_SERVER=$FTP_SERVER
+ARCH_MAP=$ARCH_MAP
+TFTP_DIR=$TFTP_DIR
+EOF
+
+cat ${WORKSPACE}/env.properties</command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
@@ -77,14 +172,13 @@ bash -x ./local/jenkins-CI-testing/build-scripts/build-complete.sh</command>
       <configs>
         <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
           <configs>
-            <hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
-              <properties>URL=http://192.168.1.108:8083/${TREE_NAME}/${GIT_DESCRIBE}/
-ARCH=${ARCH_LIST}
-GIT_DESCRIBE=$GIT_DESCRIBE
-ARCH_MAP=$ARCH_MAP
-TFTP_DIR=$TFTP_DIR</properties>
-            </hudson.plugins.parameterizedtrigger.PredefinedBuildParameters>
             <hudson.plugins.parameterizedtrigger.CurrentBuildParameters/>
+            <hudson.plugins.parameterizedtrigger.FileBuildParameters>
+              <propertiesFile>${WORKSPACE}/env.properties</propertiesFile>
+              <failTriggerOnMissing>false</failTriggerOnMissing>
+              <useMatrixChild>false</useMatrixChild>
+              <onlyExactRuns>false</onlyExactRuns>
+            </hudson.plugins.parameterizedtrigger.FileBuildParameters>
           </configs>
           <projects>estuary-boot</projects>
           <condition>UNSTABLE_OR_BETTER</condition>

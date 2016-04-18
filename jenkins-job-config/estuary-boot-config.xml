@@ -1,10 +1,9 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
   <actions/>
-  <description>&lt;!-- Managed by Jenkins Job Builder --&gt;</description>
+  <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
-    <hudson.plugins.disk__usage.DiskUsageProperty plugin="disk-usage@0.28"/>
     <jenkins.model.BuildDiscarderProperty>
       <strategy class="hudson.tasks.LogRotator">
         <daysToKeep>30</daysToKeep>
@@ -13,6 +12,7 @@
         <artifactNumToKeep>-1</artifactNumToKeep>
       </strategy>
     </jenkins.model.BuildDiscarderProperty>
+    <hudson.plugins.disk__usage.DiskUsageProperty plugin="disk-usage@0.28"/>
     <hudson.model.ParametersDefinitionProperty>
       <parameterDefinitions>
         <hudson.model.StringParameterDefinition>
@@ -100,6 +100,11 @@
           <description></description>
           <defaultValue></defaultValue>
         </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>FTP_DIR</name>
+          <description></description>
+          <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
@@ -118,6 +123,9 @@
       </hudson.plugins.git.BranchSpec>
     </branches>
     <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <browser class="hudson.plugins.git.browser.AssemblaWeb">
+      <url></url>
+    </browser>
     <submoduleCfg class="list"/>
     <extensions>
       <hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
@@ -140,14 +148,27 @@
       <command>#!/bin/bash
 set -x
 
+export 
+
+BOOT_LOC=/targetNFS/ubuntu_for_deployment/sys_setup/bin
+
 function generate_jobs()
 {
 	test_name=$1
-    python lava-kernel-ci-job-creator.py $FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}/binary/ --plans $test_name
-    if [ $? -ne 0 ]; then
-    	echo &quot;create the boot jobs error! Aborting&quot;
-       	exit -1
-    fi
+    distro=$2
+	for PLAT in $SHELL_PLATFORM 
+	do
+    	board_arch=${dict[$PLAT]}
+        if [ x&quot;$distro&quot; != x&quot;&quot; ]; then
+    		python lava-kernel-ci-job-creator.py $FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}/ --plans $test_name --distro $distro
+        else 
+        	python lava-kernel-ci-job-creator.py $FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}/ --plans $test_name 
+        fi
+   		if [ $? -ne 0 ]; then
+    		echo &quot;create the boot jobs error! Aborting&quot;
+       		exit -1
+    	fi
+	done
 }
 
 function run_and_report_jobs()
@@ -182,20 +203,27 @@ function judge_pass_or_not()
 	fi
 }
 
+function run_and_move_result()
+{
+    run_and_report_jobs 
+	[ $? -ne 0 ] &amp;&amp; exit -1
+	judge_pass_or_not
+	[ $? -ne 0 ] &amp;&amp; exit -1
+	test -d results  &amp;&amp; mv results results_$1
+	test -d jobs  &amp;&amp; mv jobs jobs_$1
+    [ ! -d $2 ]&amp;&amp; mkdir -p $2
+    test -d jobs_$1 &amp;&amp; mv jobs_$1 $2
+	test -d results_$1 &amp;&amp; mv results_$1 $2
+}
+
 #######  Begining the tests ######
 current_path=$(pwd)
-
+set +x
 DEVCCE_IP=&apos;device_ip_type.txt&apos;
 
 cd local/lava-ci/boot-app-scripts
 rm -fr jobs
 
-test -d jobs &amp;&amp; rm -fr jobs
-test -d jobs_boot &amp;&amp; rm -fr jobs_boot
-test -d jobs_SATA_boot &amp;&amp; rm -fr jobs_SATA_boot
-test -d results &amp;&amp; rm -fr results
-test -d results_boot &amp;&amp; rm -fr results_boot
-test -d results_SATA_boot &amp;&amp; rm -fr results_SATA_boot
 test -d $GIT_DESCRIBE &amp;&amp; rm -fr $GIT_DESCRIBE
 
 read -a arch &lt;&lt;&lt; $(echo $ARCH_MAP)
@@ -210,90 +238,111 @@ done
 
 SHELL_PLATFORM=&quot;$(echo $SHELL_PLATFORM | tr &apos;[:upper:]&apos; &apos;[:lower:]&apos;)&quot;
 
-##### copy some files to the lava-server machine to support the boot proces #####
+##### copy some files to the lava-server machine to support the boot process #####
+set -x
 set -e
 echo $TFTP_DIR
-scp download_all_file.py  $USER@$HOST:$TFTP_DIR
-ssh $HOST -l $USER  &quot;cd $TFTP_DIR; test -d download &amp;&amp; rm -fr download; mkdir download;&quot;
-ssh $HOST -l $USER  &quot;cd $TFTP_DIR/download; python ../download_all_file.py -u $FTP_SERVER -t $KERNELCI_TOKEN -d $GIT_DESCRIBE -j $TREE_NAME;&quot;
-ssh $HOST -l $USER  &quot;cd $TFTP_DIR/download; cp *dtb ~/; rm -fr download_all_file.py; &quot;
+scp download_all_file.py download_distros.sh  $USER@$HOST:$TFTP_DIR
+ssh $USER@$HOST  &quot;cd $TFTP_DIR; test -d download &amp;&amp; rm -fr download; mkdir download;&quot;
+ssh $USER@$HOST  &quot;cd $TFTP_DIR/download; python ../download_all_file.py -u $FTP_SERVER -t $KERNELCI_TOKEN -d $GIT_DESCRIBE -j $TREE_NAME;&quot;
+ssh $USER@$HOST &quot;cd $TFTP_DIR/download; cp -rf *dtb sata_image ~/;  rm -fr download_all_file.py; &quot;
+ssh jenkins@$HOST &quot;cd $TFTP_DIR/download; sudo cp -f *.dtb *Image* $BOOT_LOC;&quot;
+for DISTRO in $SHELL_DISTRO;
+do
+	for PLAT in $SHELL_PLATFORM;
+    do
+    	board_arch=${dict[$PLAT]}
+        URL_NAME=$FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}
+		ssh jenkins@$HOST  &quot;cd $TFTP_DIR; sudo ./download_distros.sh $DISTRO $URL_NAME ${board_arch} $PLAT&quot;
+    done
+done
 set +e
 ##### Finish copying files to the lava-server machine #####
 
-# generate the boot jobs for all the targets
-for PLAT in $SHELL_PLATFORM 
+[ -d $GIT_DESCRIBE/results ]&amp;&amp; rm -fr $GIT_DESCRIBE/results
+mkdir -p $GIT_DESCRIBE/results
+
+rm -fr jobs*
+rm -fr results*
+
+for DISTRO in $SHELL_DISTRO; 
 do
-	echo $PLAT
-    board_arch=${dict[$PLAT]}
-    generate_jobs $BOOT_PLAN
+	[ -d $DISTRO ] &amp;&amp; rm -fr $DISTRO
+    mkdir $DISTRO
+	# generate the boot jobs for all the targets
+	if [ &apos;$BOOT_PLAN&apos;x != &apos;&apos;x ]; then
+		generate_jobs $BOOT_PLAN $DISTRO
+		[ $? -ne 0 ] &amp;&amp; exit -1
+		# create the boot jobs for each target and run all these jobs
+		cd jobs
+		python ../create_boot_job.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM
+		if [ $? -ne 0 ]; then
+			echo &quot;generate the jobs according the board devices error! Aborting&quot;
+			exit -1
+		fi
+		cd ..
+    	if [ -d jobs ]; then
+			run_and_move_result $BOOT_PLAN $DISTRO
+    	fi
+	fi 
 
-done
-# create the boot jobs for each target and run all these jobs
-cd jobs
-python ../create_boot_job.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM
-if [ $? -ne 0 ]; then
-	echo &quot;generate the jobs according the board devices error! Aborting&quot;
-	exit -1
-fi
-cd ..
-run_and_report_jobs 
-[ $? -ne 0 ] &amp;&amp; exit -1
-judge_pass_or_not
-[ $? -ne 0 ] &amp;&amp; exit -1
-mv results results_$BOOT_PLAN
-mv jobs jobs_$BOOT_PLAN
-
-##### Entering the sata disk rootfs #####
-BOOT_FOR_TEST=BOOT_SATA
-# generate the boot jobs for all the targets
-for PLAT in $SHELL_PLATFORM 
-do
-    board_arch=${dict[$PLAT]}
-    generate_jobs $BOOT_FOR_TEST
-    [ $? -ne 0 ] &amp;&amp; exit -1
-done
-run_and_report_jobs 
-[ $? -ne 0 ] &amp;&amp; exit -1
-judge_pass_or_not
-[ $? -ne 0 ] &amp;&amp; exit -1
-mv results results_${BOOT_FOR_TEST}
-mv jobs jobs_${BOOT_FOR_TEST}
-##### End of entering the sata disk #####
+	#########################################
+	##### Entering the sata disk rootfs #####
+	BOOT_FOR_TEST=BOOT_SATA
+	# generate the boot jobs for all the target
+    	generate_jobs $BOOT_FOR_TEST
+    	[ $? -ne 0 ] &amp;&amp; exit -1
+	if [ -d jobs ]; then
+		run_and_move_result $BOOT_FOR_TEST $DISTRO
+	fi
+	##### End of entering the sata disk #####
+	#########################################
 
 
-#####  modify the ip address according to the boot information
-ssh $HOST -l $USER  &quot;cd /etc/lava-dispatcher/devices; rm -fr $DEVCCE_IP&quot;
-scp results_BOOT_SATA/default/$DEVCCE_IP $USER@$HOST:/etc/lava-dispatcher/devices
-scp modify_conf_file.sh  $USER@$HOST:/etc/lava-dispatcher/devices
-ssh $HOST -l $USER  &quot;cd /etc/lava-dispatcher/devices; ./modify_conf_file.sh&quot;
+	#####  modify the ip address according to the boot information
+	ssh $HOST -l $USER  &quot;cd /etc/lava-dispatcher/devices; rm -fr $DEVCCE_IP&quot;
+	scp $DISTRO/results_${BOOT_FOR_TEST}/${LAVA_USER}/${DEVCCE_IP} $USER@$HOST:/etc/lava-dispatcher/devices
+	scp modify_conf_file.sh  $USER@$HOST:/etc/lava-dispatcher/devices
+	ssh $HOST -l $USER  &quot;cd /etc/lava-dispatcher/devices; ./modify_conf_file.sh&quot;
 
-# generate the application jobs for the board_types 
-for PLAT in $SHELL_PLATFORM
-do
-    board_arch=${dict[$PLAT]}
-    #create application jobs
-    for app_plan in $APP_PLAN
-    do
+	# generate the application jobs for the board_types 
+	for app_plan in $APP_PLAN
+	do
+		[[ $app_plan =~ &quot;BOOT&quot; ]] &amp;&amp; continue
     	generate_jobs $app_plan
-    done
+	done
+	if [ -d jobs ]; then
+		run_and_move_result app $DISTRO
+		[ $? -ne 0 ] &amp;&amp; exit -1
+	fi
+	python parser.py  $DISTRO
+    mv $DISTRO $GIT_DESCRIBE/results
 done
-
-# run applications jobs and get the results
-run_and_report_jobs 
-[ $? -ne 0 ] &amp;&amp; exit -1
-
-mkdir $GIT_DESCRIBE/results
-test -d jobs &amp;&amp; mv jobs $GIT_DESCRIBE/results
-test -d jobs_$BOOT_PLAN &amp;&amp; mv jobs_$BOOT_PLAN $GIT_DESCRIBE/results
-test -d jobs_BOOT_SATA &amp;&amp; mv jobs_BOOT_SATA $GIT_DESCRIBE/results
-test -d results &amp;&amp; mv results $GIT_DESCRIBE/results
-test -d results_$BOOT_PLAN &amp;&amp; mv results_boot $GIT_DESCRIBE/results
-test -d results_BOOT_SATA &amp;&amp; mv results_BOOT_SATA $GIT_DESCRIBE/results
-
-python parser.py  $GIT_DESCRIBE
+##################################
+DES_TMP=boot_results
+[ -d $DES_TMP ] &amp;&amp; rm -fr $DES_TMP
+mkdir $DES_TMP
+# generate the application jobs for the board_types 
+for app_plan in $APP_PLAN
+do
+    [[ $app_plan =~ &quot;BOOT&quot; ]] &amp;&amp; generate_jobs $app_plan
+done
+if [ -d jobs ]; then
+	run_and_report_jobs 
+	[ $? -ne 0 ] &amp;&amp; exit -1
+	test -d jobs &amp;&amp; mv jobs $DES_TMP
+	test -d results &amp;&amp; mv results $DES_TMP
+    python parser.py  $DES_TMP
+    mv $DES_TMP $GIT_DESCRIBE/results
+fi 
+##################################
 
 # push the binary files to the ftpserver
-sudo python publish.py -j $TREE_NAME -d ./$GIT_DESCRIBE -p $PLATFORM
+#sudo python publish.py -j $TREE_NAME -d ./$GIT_DESCRIBE
+DES_DIR=$FTP_DIR/$TREE_NAME/$GIT_DESCRIBE/
+[ ! -d $DES_DIR ] &amp;&amp; echo &quot;Don&apos;t have the images and dtbs&quot; &amp;&amp; exit -1
+sudo cp -rf $GIT_DESCRIBE/*   $DES_DIR
+[ $? -ne 0 ]&amp;&amp; exit -1
 
 cd $current_path
 </command>

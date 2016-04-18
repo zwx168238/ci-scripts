@@ -38,7 +38,7 @@
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H  H(0-8) * * *</spec>
+      <spec>H  H/12 * * *</spec>
     </hudson.triggers.TimerTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
@@ -61,197 +61,12 @@
       <command>#!/bin/bash
 
 set -x
-
-REFERENCE=/srv/mirrors/linux.git
-
-declare -A trees
-trees=(
-    [estuary-kernel]=&quot;https://github.com/open-estuary/kernel.git&quot;
-)
-
-OFS=${IFS}
-IFS=&apos;#&apos;
-arr=($TREE_BRANCH)
-IFS=${OFS}
-
-tree_name=${arr[0]}
-tree_url=${trees[$tree_name]}
-branch=${arr[1]}
-if [[ -z ${branch} ]]; then
-  branch=&quot;master&quot;
-fi
-
-if [ ! -e $tree_name ]; then
-  git clone --reference $REFERENCE $tree_url $tree_name
-else
-  (cd $tree_name; git remote update)
-fi
-
-rm -f *.properties
-cd $tree_name
-rm -f *.properties
-git remote update
-git checkout -f origin/$branch
-if [ $? != 0 ]; then
-  echo &quot;ERROR: branch $branch doesn&apos;t exist&quot;
-  exit 1
-fi
-
-GIT_DESCRIBE=$(git describe)
-COMMIT_ID=$(git log -n1 --format=%H)
-
-echo &quot;${tree_name}/${branch}-${GIT_DESCRIBE}&quot;
-
-THIS_COMMIT=$branch-this.commit
-LAST_COMMIT=$branch-last.commit
-if [ ${ARCH} != &quot;arm&quot; ]; then
-  THIS_COMMIT=$ARCH-$branch-this.commit
-  LAST_COMMIT=$ARCH-$branch-last.commit
-fi
-
-if [ ! -e $LAST_COMMIT ]; then
-  echo 0 &gt; $LAST_COMMIT
-fi
-
-git log -n1 --format=%H &gt; $THIS_COMMIT
-diff $LAST_COMMIT $THIS_COMMIT
-if [ $? == 0 ]; then
-  echo &quot;Nothing new in $tree_name/$branch.  Skipping&quot;
-  exit 0
-fi
-cp $THIS_COMMIT $LAST_COMMIT
-
-ARCH_LIST=${ARCH}
-
-# defconfigs
-DEFCONFIG_LIST=&quot;allnoconfig &quot;
-DEFCONFIG_LIST+=`(cd arch/${ARCH}/configs; echo *defconfig)`
-DEFCONFIG_LIST+=&quot; &quot;
-
-# tinyconfig
-if [ -e kernel/configs/tiny.config ]; then
-  DEFCONFIG_LIST+=&quot;tinyconfig &quot;
-fi
-
-# defconfigs + fragments
-if [ ${ARCH} = &quot;arm&quot; ]; then
-  DEFCONFIG_LIST+=&quot;allmodconfig &quot;
-  DEFCONFIG_LIST+=&quot;multi_v7_defconfig+CONFIG_ARM_LPAE=y &quot;
-  DEFCONFIG_LIST+=&quot;multi_v7_defconfig+CONFIG_CPU_BIG_ENDIAN=y &quot;
-  DEFCONFIG_LIST+=&quot;multi_v7_defconfig+CONFIG_PROVE_LOCKING=y &quot;
-  DEFCONFIG_LIST+=&quot;versatile_defconfig+CONFIG_OF_UNITTEST=y &quot;
-  DEFCONFIG_LIST+=&quot;multi_v7_defconfig+CONFIG_THUMB2_KERNEL=y &quot;
-
-  # Platform specific
-  if [ -e arch/${ARCH}/configs/mvebu_v7_defconfig ]; then
-    DEFCONFIG_LIST+=&quot;mvebu_v7_defconfig+CONFIG_CPU_BIG_ENDIAN=y &quot;
-  fi
-fi
-
-if [ ${ARCH} = &quot;arm64&quot; ]; then
-  DEFCONFIG_LIST+=&quot;defconfig+CONFIG_CPU_BIG_ENDIAN=y &quot;
-  DEFCONFIG_LIST+=&quot;defconfig+CONFIG_OF_UNITTEST=y &quot;
-  DEFCONFIG_LIST+=&quot;allmodconfig &quot;
-fi
-
-if [ ${ARCH} = &quot;x86&quot; ]; then
-  DEFCONFIG_LIST+=&quot;defconfig+CONFIG_OF_UNITTEST=y &quot;
-  DEFCONFIG_LIST+=&quot;allmodconfig &quot;
-
-  # Fragments
-  FRAGS=&quot;arch/x86/configs/kvm_guest.config&quot;
-  for frag in ${FRAGS}; do
-    if [ -e $frag ]; then
-      DEFCONFIG_LIST+=&quot;defconfig+$frag &quot;
-    fi
-  done
-fi
-
-# Tree specific fragments: LSK + KVM fragments
-if [ ${tree_name} = &quot;stable&quot; ]; then
-  # Don&apos;t do allmodconfig builds
-  DEFCONFIG_LIST=${DEFCONFIG_LIST/allmodconfig/}
-fi
-
-# Tree specific fragments: LSK + KVM fragments
-if [ ${tree_name} = &quot;lsk&quot; ] || [ ${tree_name} = &quot;anders&quot; ]; then
-  # Don&apos;t do allmodconfig builds
-  DEFCONFIG_LIST=${DEFCONFIG_LIST/allmodconfig/}
-
-  FRAGS=&quot;linaro/configs/kvm-guest.conf&quot;
-  base_defconfig=&quot;defconfig&quot;
-  if [ ${ARCH} = &quot;arm&quot; ]; then
-    base_defconfig=&quot;multi_v7_defconfig&quot;
-  fi
-
-  # For -rt kernels, build with RT fragment
-  RT_FRAG=kernel/configs/preempt-rt.config
-  if [ ! -f ${RT_FRAG} ]; then
-    RT_FRAG=linaro/configs/preempt-rt.conf
-  fi
-
-  grep -q &quot;config PREEMPT_RT_FULL&quot; kernel/Kconfig.preempt
-  if [ $? = 0 ]; then
-     FRAGS+=&quot; $RT_FRAG &quot;
-  fi
-
-  for frag in ${FRAGS}; do
-    if [ -e $frag ]; then
-      DEFCONFIG_LIST+=&quot;$base_defconfig+$frag &quot;
-    fi
-  done
-
-  # KVM host: only enable for LPAE-enabled kernels
-  KVM_HOST_FRAG=linaro/configs/kvm-host.conf
-  if [ -e $KVM_HOST_FRAG ]; then
-    lpae_base=&quot;multi_v7_defconfig+CONFIG_ARM_LPAE=y&quot;
-    if [[ $DEFCONFIG_LIST == *&quot;${lpae_base}&quot;* ]]; then
-        DEFCONFIG_LIST+=&quot;${lpae_base}+$KVM_HOST_FRAG&quot;
-    fi
-  fi
-
-  # Android/AOSP fragments: combined together
-  if [ -e android/configs ]; then
-    FRAG_A=&quot;&quot;
-    FRAGS=&quot;android/configs/android-base.cfg android/configs/android-recommended.cfg&quot;
-    for frag in ${FRAGS}; do
-      if [ -e $frag ]; then
-        FRAG_A+=&quot;+$frag&quot;
-      fi
-    done
-    if [ -n &quot;$FRAG_A&quot; ]; then
-      DEFCONFIG_LIST+=&quot; $base_defconfig$FRAG_A &quot;
-      # Also build vexpress_defconfig + Android for testing on QEMU
-      DEFCONFIG_LIST+=&quot; vexpress_defconfig$FRAG_A &quot;
-    fi
-  fi
-fi
-
-cat &lt;&lt; EOF &gt; ${WORKSPACE}/${TREE_BRANCH}-build.properties
-ARCH_LIST=$ARCH_LIST
-DEFCONFIG_LIST=$DEFCONFIG_LIST
-
-TREE=$tree_url
-TREE_NAME=$tree_name
-BRANCH=$branch
-COMMIT_ID=$COMMIT_ID
-PUBLISH=true
-EOF
-
-cat ${WORKSPACE}/${TREE_BRANCH}-build.properties
 </command>
     </hudson.tasks.Shell>
     <hudson.plugins.parameterizedtrigger.TriggerBuilder plugin="parameterized-trigger@2.29">
       <configs>
         <hudson.plugins.parameterizedtrigger.BlockableBuildTriggerConfig>
-          <configs>
-            <hudson.plugins.parameterizedtrigger.FileBuildParameters>
-              <propertiesFile>${TREE_BRANCH}-build.properties</propertiesFile>
-              <failTriggerOnMissing>false</failTriggerOnMissing>
-              <useMatrixChild>false</useMatrixChild>
-              <onlyExactRuns>false</onlyExactRuns>
-            </hudson.plugins.parameterizedtrigger.FileBuildParameters>
-          </configs>
+          <configs class="empty-list"/>
           <projects>estuary-build</projects>
           <condition>ALWAYS</condition>
           <triggerWithNoParameters>false</triggerWithNoParameters>

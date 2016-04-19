@@ -65,11 +65,13 @@ def summary_for_kind(result_dir):
                         f.write(board_type + '_' + test_kind + '\n')
                         for case in contents.split('\n\n'):
                             test_case = re.findall("=+\s*\n(.*)\s*\n=+", case, re.DOTALL)
-                            if test_case:
+                            job_id = re.findall("(job_id.*)", case)
+                            if test_case and job_id:
                                 testname = test_case[0]
                                 fail_flag = re.findall('FAIL', case)
                                 if fail_flag:
-                                    f.write( '\t' + testname + '     ' + 'FAIL\n')
+                                    f.write(job_id[0] + '\n')
+                                    f.write( '\t' + testname + '     ' + 'FAIL\n\n')
 
 def summary_for_board(boot_dir, result_dir):
     # write summary for the app
@@ -107,14 +109,18 @@ def summary_for_board(boot_dir, result_dir):
                             break
                     for i in range(flag+1, len(lines)):
                         try:
-                            board_type = lines[i].split()[1].split('_')[0]
+                            if len(lines[i]) <= 1:
+                                continue
+                            board_type = lines[i].split()[2].split('_')[0]
                             boot_result = lines[i].split()[-1]
+                            job_id = lines[i].split()[0]
                             board_summary_name = board_pre + board_type
                             with open(os.path.join(result_dir, board_summary_name), 'ab') as fd:
+                                fd.write("job_id is: %s\n" % job_id)
                                 if re.findall('FAIL', content):
-                                    fd.write(board_type + '\t' + boot_name + '\t' + 'FAIL')
+                                    fd.write('\t' + board_type + '\t' + boot_name + '\t' + 'FAIL\n')
                                 else:
-                                    fd.write(board_type + '\t' + boot_name + '\t' + 'PASS')
+                                    fd.write('\t' + board_type + '\t' + boot_name + '\t' + 'PASS\n')
                         except IndexError:
                             continue
 

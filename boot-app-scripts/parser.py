@@ -8,6 +8,7 @@
 # this file is just for the result parsing
 # the input is files in the directory named ''
 
+import string
 import os
 import subprocess
 import fnmatch
@@ -25,6 +26,11 @@ board_pre = 'board#'
 whole_summary_name = 'whole_summary.txt'
 match_str = '[A-Z]+_?[A-Z]*'
 ip_address = 'device_ip_type.txt'
+boot_pre = 'boot#'
+
+total_str = "Total number of test cases: "
+fail_str = "Failed number of test cases: "
+suc_str = "Success number of test cases: "
 
 def summary_for_kind(result_dir):
     for root, dirs, files in os.walk(result_dir):
@@ -59,10 +65,14 @@ def summary_for_kind(result_dir):
                     test_kind_name = os.path.join(board_class, test_kind)
                     if os.path.exists(test_kind_name):
                         os.remove(test_kind_name)
-                    with open(test_kind_name, 'ab') as f:
+                    fail_cases = []
+                    total_num = 0
+                    with open(test_kind_name, 'ab') as fd:
                         with open(os.path.join(root, filename), 'rb') as rfd:
                             contents = rfd.read()
-                        f.write(board_type + '_' + test_kind + '\n')
+                        fd.write(board_type + '_' + test_kind + '\n')
+                        total_num = len(re.findall("job_id", contents))
+                        fail_num = 0
                         for case in contents.split('\n\n'):
                             test_case = re.findall("=+\s*\n(.*)\s*\n=+", case, re.DOTALL)
                             job_id = re.findall("(job_id.*)", case)
@@ -70,11 +80,19 @@ def summary_for_kind(result_dir):
                                 testname = test_case[0]
                                 fail_flag = re.findall('FAIL', case)
                                 if fail_flag:
-                                    f.write(job_id[0] + '\n')
-                                    f.write( '\t' + testname + '     ' + 'FAIL\n\n')
+                                    fail_num += 1
+                                    fail_cases.append(job_id[0] + '\n' + testname + '\t\t' + 'FAIL\n\n')
+                        fd.write(total_str + str(total_num) + '\n')
+                        fd.write(fail_str + str(fail_num) + '\n')
+                        fd.write(suc_str + str(total_num - fail_num) + '\n')
+                        if len(fail_cases):
+                            fd.write("\n================Failed cases===============\n")
+                        for i in range(0, len(fail_cases)):
+                            fd.write(fail_cases[i])
 
-def summary_for_board(boot_dir, result_dir):
-    # write summary for the app
+def write_summary_for_app(result_dir):
+    dic_app_cases = {}
+    # write summary for app
     for root, dirs, files in os.walk(result_dir):
         for dirname in dirs:
             # board_type_
@@ -82,14 +100,39 @@ def summary_for_board(boot_dir, result_dir):
                 board_type = dirname.split(board_type_pre)[-1]
                 # board#d02
                 board_summary_name = board_pre + board_type
-                for root, dirs, files in os.walk(root):
+                total_num_case = 0
+                fail_num_case = 0
+                suc_num_case = 0
+                for root1, dirs, files in os.walk(root):
                     for filename in files:
                         summary_name = os.path.join(result_dir, board_summary_name)
                         with open(summary_name, 'ab') as fd:
-                            with open(os.path.join(root, filename), 'rb') as rfd:
-                                lines = rfd.read()
-                                fd.write(lines)
+                            with open(os.path.join(root1, filename), 'rb') as rfd:
+                                lines = rfd.readlines()
+                                for i in range(0, len(lines)):
+                                    if re.search('FAIL', lines[i]):
+                                        fd.write("Test category: " + filename + '\n')
+                                        break
+                                for i in range(0, len(lines)):
+                                    try:
+                                        if re.match(total_str, lines[i]):
+                                            total_num_case += string.atoi(re.findall('(\d+)', lines[i])[0][0])
+                                        elif re.match(fail_str, lines[i]):
+                                            fail_num_case += string.atoi(re.findall('(\d+)', lines[i])[0][0])
+                                        elif re.match(suc_str, lines[i]):
+                                            suc_num_case += string.atoi(re.findall('(\d+)', lines[i])[0][0])
+                                        else:
+                                            if re.search('FAIL', lines[i]):
+                                                job_id = re.search('job_id.*?(\d+)', lines[i-1]).group(1)
+                                                fd.write('\t' + str(job_id) + '\t' + lines[i])
+                                    except Exception:
+                                        continue
+                dic_app_cases[board_type] = [total_num_case, fail_num_case, suc_num_case]
+    return dic_app_cases
+
+def write_summary_for_boot(boot_dir, dic_app_case):
     # write summary for boot
+    dic_boot_num = {}
     for root, dirs, files in os.walk(boot_dir):
         for filename in files:
             # for the boot of ramdisk
@@ -107,6 +150,9 @@ def summary_for_board(boot_dir, result_dir):
                         if re.findall('Full Boot Report', lines[i]):
                             flag = i
                             break
+                    total_num = 0
+                    fail_num = 0
+                    suc_num = 0
                     for i in range(flag+1, len(lines)):
                         try:
                             if len(lines[i]) <= 1:
@@ -114,16 +160,49 @@ def summary_for_board(boot_dir, result_dir):
                             board_type = lines[i].split()[2].split('_')[0]
                             boot_result = lines[i].split()[-1]
                             job_id = lines[i].split()[0]
-                            board_summary_name = board_pre + board_type
-                            with open(os.path.join(result_dir, board_summary_name), 'ab') as fd:
-                                fd.write("job_id is: %s\n" % job_id)
-                                if re.findall('FAIL', content):
-                                    fd.write('\t' + board_type + '\t' + boot_name + '\t' + 'FAIL\n')
+                            boot_summary_name = boot_pre + 'summary'
+                            dic_boot_num[board_type] = []
+                            with open(os.path.join(boot_dir, boot_summary_name), 'ab') as fd:
+                                if re.findall('FAIL', lines[i]):
+                                    total_num += 1
+                                    fail_num += 1
+                                    fd.write('\t' + job_id + '\t' + board_type + '\t' + boot_name + '\t' + 'FAIL\n')
                                 else:
-                                    fd.write('\t' + board_type + '\t' + boot_name + '\t' + 'PASS\n')
+                                    total_num += 1
+                                    suc_num += 1
+                                    fd.write('\t' + job_id + '\t' + board_type + '\t' + boot_name + '\t' + 'PASS\n')
                         except IndexError:
                             continue
+                        dic_boot_num[board_type] = [total_num, fail_num, suc_num]
+    return dic_boot_num
 
+def sum_of_dic(dic1, dic2):
+    dic_sum = {}
+    for key in dic1.keys():
+        if key in dic2.keys():
+            if key not in dic_sum.keys():
+                dic_sum[key] = [0, 0, 0]
+            dic_sum[key][0] = dic1[key][0] + dic2[key][0]
+            dic_sum[key][1] = dic1[key][1] + dic2[key][1]
+            dic_sum[key][2] = dic1[key][2] + dic2[key][2]
+        else:
+            dic_sum[key] = dic1[key]
+    for key in dic2.keys():
+        if key not in dic1.keys():
+            dic_sum[key] = dic2[key]
+    return dic_sum
+
+def summary_for_board(boot_dir, result_dir):
+    dic_app_case = write_summary_for_app(result_dir)
+    dic_boot_case = write_summary_for_boot(boot_dir, dic_app_case)
+    dic_sum = sum_of_dic(dic_app_case, dic_boot_case)
+    for board in dic_app_case.keys():
+        board_summary_name = board_pre + board
+        with open(os.path.join(result_dir, board_summary_name), 'ab') as fd:
+            fd.write("\n" + total_str + str(dic_app_case[board][0]))
+            fd.write("\n" + fail_str + str(dic_app_case[board][1]))
+            fd.write("\n" + suc_str + str(dic_app_case[board][2]) + '\n')
+    #if len(dic_app_case.keys()) > len(dic_boot_case.keys()):
 
 def parser_all_files(result_dir):
     summary_path = os.path.join(result_dir, whole_summary_name)

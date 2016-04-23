@@ -325,7 +325,6 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority, distr
                                             tmp = tmp.replace('{endian}', 'little')
                                         tmp = tmp.replace('{defconfig}', defconfig)
                                         tmp = tmp.replace('{fastboot}', str(fastboot).lower())
-                                        #pdb.set_trace()
                                         tmp = tmp.replace('{distro_name}', distro)
                                         if plan:
                                             tmp = tmp.replace('{test_plan}', plan)
@@ -360,7 +359,11 @@ def fill_nfs_url(job_json, distro_list, device_type):
         with open(modified_file, 'wt') as fout:
             with open(job_json, "rt") as fin:
                 for line in fin:
-                    tmp = line.replace('{nfs_url}', distro)
+                    tmp = line
+                    if re.search('{nfs_url}', tmp):
+                        tmp = line.replace('{nfs_url}', distro)
+                    if re.search('{nfs_distro}', tmp):
+                        tmp = line.replace('{nfs_distro}', rootfs_name)
                     fout.write(tmp)
             print 'JSON Job created: jobs/%s' % modified_file.split('/')[-1]
     if os.path.exists(job_json):

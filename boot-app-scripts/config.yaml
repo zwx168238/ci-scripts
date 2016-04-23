@@ -11,6 +11,7 @@ DISTRO:
         - Fedora: Fedora_ARM64.tar.gz
         - OpenSuse: OpenSuse_ARM64.tar.gz
         - Debian: Debian_ARM64.tar.gz
+        - CentOS: CentOS_ARM64.tar.gz
     D01:
         - Ubuntu: Ubuntu_ARM32.tar.gz
 

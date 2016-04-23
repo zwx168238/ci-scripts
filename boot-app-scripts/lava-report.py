@@ -249,6 +249,10 @@ def boot_report(config):
             device_type = job_details['requested_device_type_id']
         if job_details['description']:
             job_name = job_details['description']
+            try:
+                job_short_name = re.search(".*?([A-Z]+.*)", job_name).group(1)
+            except Exception:
+                job_short_name = 'boot-test'
         device_name = job_details['_actual_device_cache']['hostname']
         result = jobs[job_id]['result']
         bundle = jobs[job_id]['bundle']
@@ -404,12 +408,12 @@ def boot_report(config):
                 kernel_boot_time = '0.0'
             if results.has_key(kernel_defconfig):
                 results[kernel_defconfig].append({'device_type': platform_name,
-                    'job_id': job_id,
+                    'job_id': job_id, 'job_name': job_short_name,
                     'kernel_boot_time': kernel_boot_time, 'result': result,
                     'device_name': device_name})
             else:
                 results[kernel_defconfig] = [{'device_type': platform_name,
-                    'job_id': job_id,
+                    'job_id': job_id, 'job_name': job_short_name,
                     'kernel_boot_time': kernel_boot_time, 'result': result,
                     'device_name': device_name}]
             # Create JSON format boot metadata
@@ -516,9 +520,11 @@ def boot_report(config):
                         break
                 for result in results_list:
                     if result['result'] == 'OFFLINE':
-                        f.write('    %s   %s   %ss   boot-test: %s\n' % (result['device_type'],
+                        f.write('    %s   %s   %s   %ss   %s: %s\n' % (result['job_id'],
+                                                                    result['device_type'],
                                                                     result['device_name'],
                                                                     result['kernel_boot_time'],
+                                                                    result['job_name'],
                                                                     result['result']))
                         f.write('\n')
             first = True
@@ -535,10 +541,11 @@ def boot_report(config):
                         break
                 for result in results_list:
                     if result['result'] == 'FAIL':
-                        f.write('    %s   %s   %s   %ss   boot-test: %s\n' % (result['job_id'],
+                        f.write('    %s   %s   %s   %ss   %s: %s\n' % (result['job_id'],
                                                                     result['device_type'],
                                                                     result['device_name'],
                                                                     result['kernel_boot_time'],
+                                                                    result['job_name'],
                                                                     result['result']))
             f.write('\n')
             f.write('Full Boot Report:\n')
@@ -547,11 +554,12 @@ def boot_report(config):
                 f.write(defconfig)
                 f.write('\n')
                 for result in results_list:
-                    f.write('    %s   %s   %s   %ss   boot-test: %s\n' %
+                    f.write('    %s   %s   %s   %ss   %s: %s\n' %
                                                                     (result['job_id'],
                                                                         result['device_type'],
                                                                         result['device_name'],
                                                                         result['kernel_boot_time'],
+                                                                        result['job_name'],
                                                                         result['result']))
     # add by wuyanjun
     if results and directory:

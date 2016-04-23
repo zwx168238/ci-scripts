@@ -7,7 +7,6 @@
 
 # this file is just for the result parsing
 # the input is files in the directory named ''
-
 import string
 import os
 import subprocess
@@ -24,7 +23,8 @@ board_type_pre = 'board_type_'
 summary_post = '_summary.txt'
 board_pre = 'board#'
 whole_summary_name = 'whole_summary.txt'
-match_str = '[A-Z]+_?[A-Z]*'
+match_str = '[A-Z]+(_[A-Z]+)*'
+match_str_short = '[A-Z]+_[A-Z]*'
 ip_address = 'device_ip_type.txt'
 boot_pre = 'boot#'
 
@@ -41,15 +41,15 @@ def summary_for_kind(result_dir):
             if filename.endswith(whole_summary_name):
                 continue
             if 'boot' in filename or 'BOOT' in filename:
-                if not re.findall(match_str, filename):
-                   print filename
                 continue
             if 'summary' in filename:
-                test_case_name = re.findall(match_str, filename)
-                if test_case_name:
-                    test_kind = test_case_name[0]
-                else:
-                    test_kind = ''
+                try:
+                    test_case_name = re.search(match_str, filename).group(0)
+                except Exception:
+                    test_case_name_1 = re.findall(match_str_short, filename)
+                    if test_case_name_1:
+                        test_case_name = test_case_name[0]
+                test_kind = test_case_name
                 if test_kind:
                     board_type = filename.split(test_kind)[0][:-1]
                 else:
@@ -142,7 +142,12 @@ def write_summary_for_boot(boot_dir, dic_app_case):
                 with open(os.path.join(root, filename), 'rb') as rfd:
                     content = rfd.read()
                 if re.findall('Full Boot Report', content):
-                    boot_name = re.findall(match_str, filename)[0]
+                    try:
+                        boot_name = re.search(match_str, filename).group(0)
+                    except Exception:
+                        boot_name_1 = re.findall(match_str_short, filename)[0]
+                        if boot_name_1:
+                            boot_name = boot_name_1[0]
                     with open(os.path.join(root, filename), 'rb') as rfd:
                         lines = rfd.readlines()
                     flag = len(lines) - 1
@@ -202,7 +207,6 @@ def summary_for_board(boot_dir, result_dir):
             fd.write("\n" + total_str + str(dic_app_case[board][0]))
             fd.write("\n" + fail_str + str(dic_app_case[board][1]))
             fd.write("\n" + suc_str + str(dic_app_case[board][2]) + '\n')
-    #if len(dic_app_case.keys()) > len(dic_boot_case.keys()):
 
 def parser_all_files(result_dir):
     summary_path = os.path.join(result_dir, whole_summary_name)
@@ -219,6 +223,8 @@ def parser_all_files(result_dir):
     if os.path.exists(parser_result):
         summary_for_board(result_dir, parser_result)
         shutil.move(parser_result, result_dir)
+    else:
+        summary_for_board(result_dir, result_dir)
 
 if __name__ == '__main__':
     try:
@@ -226,6 +232,5 @@ if __name__ == '__main__':
     except IndexError:
         print "Need to point out where the outputs store"
         raise
-    #print result_dir
     if result_dir:
         parser_all_files(result_dir)

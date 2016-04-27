@@ -15,12 +15,16 @@ import time
 import re
 import sys
 import shutil
+import argparse
+
+import pdb
 
 job_map = {}
 
 parser_result = 'parser_result'
 board_type_pre = 'board_type_'
 summary_post = '_summary.txt'
+summary='summary'
 board_pre = 'board#'
 whole_summary_name = 'whole_summary.txt'
 match_str = '[A-Z]+(_[A-Z]+)*'
@@ -53,7 +57,9 @@ def summary_for_kind(result_dir):
                 if test_kind:
                     board_type = filename.split(test_kind)[0][:-1]
                 else:
-                    board_type = filename.split(summary_post)[0]
+                    board_type_all = filename.split(summary_post)
+                    if board_type_all:
+                        board_type = board_type_all[0]
                 if test_kind and board_type:
                     board_class = os.path.join(parser_result, board_type_pre + board_type)
                     if not os.path.exists(parser_result):
@@ -141,13 +147,16 @@ def write_summary_for_boot(boot_dir, dic_app_case):
             if 'BOOT' in filename and not filename.startswith('boot'):
                 with open(os.path.join(root, filename), 'rb') as rfd:
                     content = rfd.read()
+                boot_name = ''
                 if re.findall('Full Boot Report', content):
                     try:
                         boot_name = re.search(match_str, filename).group(0)
                     except Exception:
-                        boot_name_1 = re.findall(match_str_short, filename)[0]
+                        boot_name_1 = re.findall(match_str_short, filename)
                         if boot_name_1:
                             boot_name = boot_name_1[0]
+                    if not boot_name:
+                        continue
                     with open(os.path.join(root, filename), 'rb') as rfd:
                         lines = rfd.readlines()
                     flag = len(lines) - 1
@@ -165,17 +174,18 @@ def write_summary_for_boot(boot_dir, dic_app_case):
                             board_type = lines[i].split()[2].split('_')[0]
                             boot_result = lines[i].split()[-1]
                             job_id = lines[i].split()[0]
+                            job_name = lines[i].split()[-2].split(":")[0]
                             boot_summary_name = boot_pre + 'summary'
                             dic_boot_num[board_type] = []
                             with open(os.path.join(boot_dir, boot_summary_name), 'ab') as fd:
                                 if re.findall('FAIL', lines[i]):
                                     total_num += 1
                                     fail_num += 1
-                                    fd.write('\t' + job_id + '\t' + board_type + '\t' + boot_name + '\t' + 'FAIL\n')
+                                    fd.write('\t' + job_id + '\t' + board_type + '\t' + boot_name + '\t' + job_name + '\t' + 'FAIL\n')
                                 else:
                                     total_num += 1
                                     suc_num += 1
-                                    fd.write('\t' + job_id + '\t' + board_type + '\t' + boot_name + '\t' + 'PASS\n')
+                                    fd.write('\t' + job_id + '\t' + board_type + '\t' + boot_name + '\t' + job_name + '\t' + 'PASS\n')
                         except IndexError:
                             continue
                         dic_boot_num[board_type] = [total_num, fail_num, suc_num]
@@ -226,11 +236,64 @@ def parser_all_files(result_dir):
     else:
         summary_for_board(result_dir, result_dir)
 
+def summary_all_files(summary_dir):
+    summary_file = os.path.join(summary_dir, whole_summary_name)
+    if os.path.exists(summary_file):
+        os.remove(summary_file)
+    with open(summary_file, 'ab') as wfp:
+        total_num = 0
+        suc_num = 0
+        fail_num = 0
+        wfp.write("*"*20 + " BOOT SUMMARY START " + "*"*20 + '\n')
+        for root, dirs, files in os.walk(summary_dir):
+            for filename in files:
+                if re.match(boot_pre + summary, filename):
+                    with open(os.path.join(root, filename), 'rb') as rfb:
+                        contents = rfb.read()
+                        wfp.write(contents)
+                        suc_num += len(re.findall('PASS', contents))
+                        fail_num += len(re.findall('FAIL', contents))
+        total_num = suc_num + fail_num
+        wfp.write("\n" + total_str + str(total_num))
+        wfp.write("\n" + fail_str + str(fail_num))
+        wfp.write("\n" + suc_str + str(suc_num))
+        wfp.write("\n" + "*"*20 + " BOOT SUMMARY END" + "*"*20 + '\n')
+
+        total_num_app = 0
+        fail_num_app = 0
+        suc_num_app = 0
+        wfp.write("\n" + "*"*20 + " APPLICATION SUMMARY START " + "*"*20 + '\n')
+        for root, dirs, files in os.walk(summary_dir):
+            for filename in files:
+                if re.match(board_pre, filename):
+                    flag = 0
+                    wfp.write(os.path.join(root, filename) + '\n')
+                    with open(os.path.join(root, filename)) as rfd:
+                        contents = rfd.read()
+                        wfp.write(contents)
+                        if re.findall(total_str + "(\d+)", contents):
+                            total_num_app += string.atoi(re.findall(total_str+"(\d+)", contents)[0])
+                        if re.findall(suc_str+"(\d+)", contents):
+                            suc_num_app += string.atoi(re.findall(suc_str+"(\d+)", contents)[0])
+                        if re.findall(fail_str+"(\d+)", contents):
+                            fail_num_app += string.atoi(re.findall(fail_str+"(\d+)", contents)[0])
+                    wfp.write("-"*60 + '\n')
+        wfp.write("\n" + total_str + str(total_num_app))
+        wfp.write("\n" + fail_str + str(fail_num_app))
+        wfp.write("\n" + suc_str + str(suc_num_app))
+        wfp.write("\n" + "*"*20 + " APPLICATION SUMMARY END " + "*"*20 + '\n')
+
 if __name__ == '__main__':
-    try:
-        result_dir = sys.argv[1]
-    except IndexError:
-        print "Need to point out where the outputs store"
-        raise
-    if result_dir:
-        parser_all_files(result_dir)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--directory", action="store", dest="parse", help="which directory to parser for the test category")
+    parser.add_argument("-s", "--summary", action="store", dest="summary", help="which directory to parser and get the summary result")
+    args = parser.parse_args()
+    if args.parse:
+        result_dir = args.parse
+        if result_dir:
+            parser_all_files(result_dir)
+    if args.summary:
+        summary_dir = args.summary
+        if summary_dir:
+            summary_all_files(summary_dir)
+

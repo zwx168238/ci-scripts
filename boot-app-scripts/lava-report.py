@@ -215,6 +215,7 @@ def boot_report(config):
     results_directory = os.getcwd() + '/results'
     results = {}
     utils.mkdir(results_directory)
+    test_plan = None
     for job_id in jobs:
         print 'Job ID: %s' % job_id
         # Init
@@ -236,7 +237,6 @@ def boot_report(config):
         dtb_append = None
         fastboot = None
         fastboot_cmd = None
-        test_plan = None
         job_file = ''
         board_offline = False
         kernel_boot_time = None
@@ -352,7 +352,9 @@ def boot_report(config):
             if utils.in_bundle_attributes(bundle_attributes, 'boot_retries'):
                 boot_retries = int(bundle_attributes['boot_retries'])
             if utils.in_bundle_attributes(bundle_attributes, 'test.plan'):
-                test_plan = bundle_attributes['test.plan']
+                test_tmp = bundle_attributes['test.plan']
+                if test_tmp:
+                    test_plan = test_tmp
         else:
             if not kernel_defconfig or not kernel_version or not kernel_tree:
                 job_defnition = {}

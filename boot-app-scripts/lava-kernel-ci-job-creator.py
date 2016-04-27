@@ -461,7 +461,7 @@ if __name__ == '__main__':
     parser.add_argument("--targets", nargs='+', help="specific targets to create jobs for")
     parser.add_argument("--priority", choices=['high', 'medium', 'low', 'HIGH', 'MEDIUM', 'LOW'],
                         help="priority for LAVA jobs")
-    parser.add_argument("--distro", choices=['Ubuntu', 'OpenSuse', 'Debian', 'Fedora'],
+    parser.add_argument("--distro", choices=['Ubuntu', 'OpenSuse', 'Debian', 'Fedora', 'CentOS'],
                         help="distro for sata deploying")
     args = vars(parser.parse_args())
     main(args)

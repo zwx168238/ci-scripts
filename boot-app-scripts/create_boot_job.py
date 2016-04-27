@@ -43,6 +43,7 @@ def create_jobs(connection, server, bundle_stream=None):
                 os.remove(job)
             else:
                 print "No device-type available on server, skipping..."
+                os.remove(job)
                 print os.path.basename(job) + ' not valiable'
 
 def load_jobs():

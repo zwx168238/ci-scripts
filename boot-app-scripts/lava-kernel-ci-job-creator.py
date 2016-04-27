@@ -17,7 +17,7 @@ legacy_platform_list = []
 
 arch_distro = {'d01': ['Ubuntu_ARM32.tar.gz'],
                'd02': ['Fedora_ARM64.tar.gz', 'Ubuntu_ARM64.tar.gz',
-                   'Debian_ARM64.tar.gz', 'OpenSuse_ARM64.tar.gz']}
+                   'Debian_ARM64.tar.gz', 'OpenSuse_ARM64.tar.gz', 'CentOS_ARM64.tar.gz']}
 
 panda_es = {'device_type': 'panda-es',
             'templates': ['generic-arm-dtb-kernel-ci-boot-template.json',
@@ -54,8 +54,7 @@ hisi_x5hd2_dkb = {'device_type': 'hi3716cv200',
                   'fastboot': False}
 
 d01 = {'device_type': 'd01',
-       'templates': ['generic-arm-dtb-kernel-ci-boot-template.json',
-                     'generic-arm-dtb-kernel-ci-kselftest-template.json'],
+       'templates': ['d01-arm-dtb-kernel-ci-boot-template.json'],
        'defconfig_blacklist': ['arm-allmodconfig',
                                'arm-multi_v7_defconfig+linaro-base+distribution'],
        'kernel_blacklist': [],
@@ -168,11 +167,6 @@ device_map = {'omap4-panda-es.dtb': [panda_es],
               'hip05-d02.dtb': [d02],
               'hisi-x5hd2-dkb.dtb': [hisi_x5hd2_dkb],
               'ste-snowball.dtb': [snowball],
-              #'vexpress-v2p-ca15-tc1.dtb': [qemu_arm_cortex_a15],
-              #'vexpress-v2p-ca15-tc1-legacy': [qemu_arm_cortex_a15_legacy],
-              #'vexpress-v2p-ca15_a7.dtb': [qemu_arm_cortex_a15_a7],
-              #'vexpress-v2p-ca9.dtb': [qemu_arm_cortex_a9],
-              #'vexpress-v2p-ca9-legacy': [qemu_arm_cortex_a9_legacy],
               #'qemu-arm-legacy': [qemu_arm],
               #'qemu-aarch64-legacy': [qemu_aarch64],
               #'juno.dtb': [juno, juno_kvm],
@@ -393,19 +387,14 @@ def walk_url(url, distro_url, plans=None, arch=None, targets=None, priority=None
                 base_url = url
                 platform_list.append(url + 'x86')
                 platform_list.append(url + 'x86-kvm')
-            #if 'zImage' in name and 'arm' in url:
-            if 'zImage' in name:
+            if 'zImage' in name and 'arm' in url:
                 kernel = url + name
                 base_url = url
-                # qemu-arm,legacy
-                if 'arm-versatile_defconfig' in url:
-                    legacy_platform_list.append(url + 'qemu-arm-legacy')
-            #if 'Image' in name and 'arm64' in url:
-            if 'Image' in name:
+            if 'Image' in name and 'arm64' in url:
                 kernel = url + name
                 base_url = url
             if name.endswith('.dtb') and name in device_map:
-                if base_url and base_url in url:
+                if (base_url and base_url in url) or (base_url is None):
                     platform_list.append(url + name)
         elif arch == 'x86':
             if 'bzImage' in name and 'x86' in url:
@@ -417,11 +406,8 @@ def walk_url(url, distro_url, plans=None, arch=None, targets=None, priority=None
             if 'zImage' in name and 'arm' in url:
                 kernel = url + name
                 base_url = url
-                # qemu-arm,legacy
-                if 'arm-versatile_defconfig' in url:
-                    legacy_platform_list.append(url + 'qemu-arm-legacy')
             if name.endswith('.dtb') and name in device_map:
-                if base_url and base_url in url:
+                if (base_url and base_url in url) or (base_url is None):
                     legacy_platform_list.append(url + name)
         elif arch == 'arm64':
             if 'Image' in name and 'arm64' in url:

@@ -23,7 +23,7 @@
             "command": "boot_linaro_image",
             "parameters": {
                 "options": [
-                    "boot_cmds=boot_cmds_ramdisk"
+                    "boot_cmds=boot_cmds_esl"
                 ]
             }
         },

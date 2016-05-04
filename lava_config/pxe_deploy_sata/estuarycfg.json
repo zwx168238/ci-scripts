@@ -7,7 +7,8 @@
 {"name":"Ubuntu","install":"no","capacity":"50G"},
 {"name":"Debian","install":"no","capacity":"50G"},
 {"name":"Fedora","install":"yes","capacity":"50G"},
-{"name":"OpenSuse","install":"no","capacity":"50G"}
+{"name":"OpenSuse","install":"no","capacity":"50G"},
+{"name":"CentOS","install":"no","capacity":"50G"}
 ],
 
 "boards":[

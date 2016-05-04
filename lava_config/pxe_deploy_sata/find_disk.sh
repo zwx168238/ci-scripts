@@ -5,7 +5,6 @@
 cwd=`dirname $0`
 
 en_shield=y
-set -x
 declare -a disk_list
 export disk_list=
 
@@ -74,6 +73,10 @@ case $1 in
 	"Debian")
 	debian_en=yes
 	debian_partition_size=$capacity
+	;;
+	"CentOS")
+	centos_en=yes
+	centos_partition_size=$capacity
 	;;
 	*)
 	;;
@@ -525,6 +528,38 @@ if [ "$full_intallation" = "yes" ]; then
         sudo rm -rf rootfs
         
         if [ "$target_system_type" == "Debian" ]; then
+            rootfs_dev=/dev/${disk_list[0]}$NEWRT_IDX
+            rootfs_partuuid=`ls -al /dev/disk/by-partuuid/ | grep "${rootfs_dev##*/}" | awk {'print $9'}`
+        fi
+    fi
+    if [ "$centos_en" == "yes" ]; then
+        centos_partition_size_int=${centos_partition_size%G*}
+        rootfs_end=$(( rootfs_start + centos_partition_size_int ))
+        cmd_str="sudo parted /dev/${disk_list[0]} mkpart centos ${rootfs_start}G ${rootfs_end}G"
+        echo -n "make root partition by "$cmd_str
+        eval $cmd_str
+        [ $? ] || { echo " ERR"; exit; }
+
+        #get the device id that match with the partition just made
+        read -a cur_idx <<< $(sudo parted /dev/${disk_list[0]} print | \
+        grep "centos" | awk '{print $1}' | sort)
+        echo "root cur_idx is ${cur_idx[*]}"
+        NEWRT_IDX=${cur_idx[0]}
+
+        rootfs_start=$rootfs_end
+
+        #we always re-format the root partition
+        echo yes | mkfs -t ext3 /dev/${disk_list[0]}$NEWRT_IDX
+        sudo mkdir $PWD/rootfs
+
+        sudo mount -t ext3 /dev/${disk_list[0]}$NEWRT_IDX rootfs
+
+        sudo rm -rf rootfs/*
+        tar -xzf /sys_setup/distro/$build_PLATFORM/centos$TARGET_ARCH/CentOS_"$TARGET_ARCH".tar.gz -C rootfs/
+        sudo umount rootfs
+        sudo rm -rf rootfs
+        
+        if [ "$target_system_type" == "CentOS" ]; then
             rootfs_dev=/dev/${disk_list[0]}$NEWRT_IDX
             rootfs_partuuid=`ls -al /dev/disk/by-partuuid/ | grep "${rootfs_dev##*/}" | awk {'print $9'}`
         fi

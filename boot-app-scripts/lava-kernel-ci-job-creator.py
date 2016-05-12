@@ -288,6 +288,8 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority,
                                             tmp = tmp.replace('{device_type}', device_type)
                                         tmp = tmp.replace('{job_name}',\
                                                 job_json.split("/")[-1].split(".json")[0])
+                                        if sasFlag:
+                                            tmp = tmp.replace('{distro}', distro)
                                         # end by wuyanjun
                                         tmp = tmp.replace('{image_type}', image_type)
                                         tmp = tmp.replace('{image_url}', image_url)
@@ -347,6 +349,7 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority,
                             if sasFlag:
                                 new_name = job_json.split(".json")[0] + '-' + distro + '.json'
                                 os.rename(job_json, new_name)
+                                job_json = new_name
                             print 'JSON Job created: jobs/%s' % job_json.split('/')[-1]
 
 def fill_nfs_url(job_json, distro_list, device_type):

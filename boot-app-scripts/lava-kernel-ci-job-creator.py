@@ -206,7 +206,8 @@ def get_nfs_url(distro_url, device_type):
         for direc in dirs:
             get_nfs_url(distro_url+direc, device_type)
 
-def create_jobs(base_url, kernel, plans, platform_list, targets, priority, distro_url, distro="Ubuntu"):
+def create_jobs(base_url, kernel, plans, platform_list, targets, priority,
+                distro_url, distro="Ubuntu", sasFlag=False):
     print 'Creating JSON Job Files...'
     cwd = os.getcwd()
     url = urlparse.urlparse(kernel)
@@ -342,6 +343,10 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority, distr
                                 get_nfs_url(distro_url, device_type)
                                 if len(distro_list):
                                     fill_nfs_url(job_json, distro_list, device_type)
+                            # add by wuyanjun 2016/5/12
+                            if sasFlag:
+                                new_name = job_json.split(".json")[0] + '-' + distro + '.json'
+                                os.rename(job_json, new_name)
                             print 'JSON Job created: jobs/%s' % job_json.split('/')[-1]
 
 def fill_nfs_url(job_json, distro_list, device_type):
@@ -363,7 +368,8 @@ def fill_nfs_url(job_json, distro_list, device_type):
     if os.path.exists(job_json):
         os.remove(job_json)
 
-def walk_url(url, distro_url, plans=None, arch=None, targets=None, priority=None, distro="Ubuntu"):
+def walk_url(url, distro_url, plans=None, arch=None, targets=None,
+            priority=None, distro="Ubuntu", SasFlag=False):
     global base_url
     global kernel
     global platform_list
@@ -422,7 +428,7 @@ def walk_url(url, distro_url, plans=None, arch=None, targets=None, priority=None
         if platform_list:
             print 'Found artifacts at: %s' % base_url
             create_jobs(base_url, kernel, plans, platform_list, targets,
-                        priority, distro_url, distro)
+                        priority, distro_url, distro, SasFlag)
             # Hack for subdirectories with arm64 dtbs
             if 'arm64' not in base_url:
                 base_url = None
@@ -431,11 +437,11 @@ def walk_url(url, distro_url, plans=None, arch=None, targets=None, priority=None
         elif legacy_platform_list:
             print 'Found artifacts at: %s' % base_url
             create_jobs(base_url, kernel, plans, legacy_platform_list, targets,
-                        priority, distro_url, distro)
+                        priority, distro_url, distro, SasFlag)
             legacy_platform_list = []
 
     for dir in dirs:
-        walk_url(url + dir, distro_url, plans, arch, targets, priority, distro)
+        walk_url(url + dir, distro_url, plans, arch, targets, priority, distro, SasFlag)
 
 def main(args):
     config = configuration.get_config(args)
@@ -446,7 +452,7 @@ def main(args):
     if distro is None:
         distro = "Ubuntu"
     walk_url(config.get("url"), config.get("url"), config.get("plans"), config.get("arch"),
-            config.get("targets"), config.get("priority"), distro)
+            config.get("targets"), config.get("priority"), distro, config.get("SasFlag"))
     print 'Done scanning for kernel information'
     print 'Done creating JSON jobs'
     exit(0)
@@ -463,5 +469,8 @@ if __name__ == '__main__':
                         help="priority for LAVA jobs")
     parser.add_argument("--distro", choices=['Ubuntu', 'OpenSuse', 'Debian', 'Fedora', 'CentOS'],
                         help="distro for sata deploying")
+    # the SasFlag is used to flag if the lava job will use the Distro in the job name
+    # when there is not {nfs_url} in the job definition
+    parser.add_argument('--SasFlag', action='store_true')
     args = vars(parser.parse_args())
     main(args)

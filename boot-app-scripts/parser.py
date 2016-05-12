@@ -283,6 +283,12 @@ def summary_all_files(summary_dir):
         wfp.write("\n" + suc_str + str(suc_num_app))
         wfp.write("\n" + "*"*20 + " APPLICATION SUMMARY END " + "*"*20 + '\n')
 
+        wfp.write('\n' + "*"*20 + " SUMMARY START " + "*"*20 + '\n')
+        wfp.write(total_str + str(total_num + total_num_app))
+        wfp.write('\n' + fail_str + str(fail_num + fail_num_app))
+        wfp.write('\n' + suc_str + str(suc_num + suc_num_app))
+        wfp.write('\n' + "*"*20 + " SUMMARY END " + "*"*20 + '\n')
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--directory", action="store", dest="parse", help="which directory to parser for the test category")

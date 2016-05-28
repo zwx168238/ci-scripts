@@ -156,12 +156,13 @@ function generate_jobs()
 {
 	test_name=$1
     distro=$2
+    harddisk_flag=$3
    	rm -fr  jobs  results
 	for PLAT in $SHELL_PLATFORM 
 	do
     	board_arch=${dict[$PLAT]}
         if [ x&quot;$distro&quot; != x&quot;&quot; ]; then
-    		python lava-kernel-ci-job-creator.py $FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}/ --plans $test_name --distro $distro
+    		python lava-kernel-ci-job-creator.py $FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}/ --plans $test_name --distro $distro $harddisk_flag
         else 
         	python lava-kernel-ci-job-creator.py $FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}/ --plans $test_name 
         fi
@@ -218,6 +219,7 @@ function run_and_move_result()
 }
 
 #######  Begining the tests ######
+timefile=&quot;timestamp_bk.log&quot;
 current_path=$(pwd)
 set +x
 DEVCCE_IP=&apos;device_ip_type.txt&apos;
@@ -238,6 +240,14 @@ do
 done
 
 SHELL_PLATFORM=&quot;$(echo $SHELL_PLATFORM | tr &apos;[:upper:]&apos; &apos;[:lower:]&apos;)&quot;
+
+
+if [ -f ${timefile} ]; then
+	rm -fr  $timefile
+else
+	touch $timefile
+fi
+echo &quot;the begin time of boot test is &quot;${BUILD_TIMESTAMP_PATH}  &gt;&gt; $timefile
 
 ##### copy some files to the lava-server machine to support the boot process #####
 set -x
@@ -273,7 +283,7 @@ mkdir -p $GIT_DESCRIBE/results
 
 rm -fr jobs*
 rm -fr results*
-
+echo &quot;the time of preparing all envireonment is &quot;${BUILD_TIMESTAMP_PATH}  &gt;&gt; $timefile
 for DISTRO in $SHELL_DISTRO; 
 do
 	[ -d $DISTRO ] &amp;&amp; rm -fr $DISTRO
@@ -281,9 +291,9 @@ do
 	# generate the boot jobs for all the targets
 	if [ &apos;$BOOT_PLAN&apos;x != &apos;&apos;x ]; then
 		generate_jobs $BOOT_PLAN $DISTRO
-		[ $? -ne 0 ] &amp;&amp; continue
 		# create the boot jobs for each target and run all these jobs
-		cd jobs
+        [ $? -ne 0 ] &amp;&amp; continue
+        cd jobs
 		python ../create_boot_job.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM
 		if [ $? -ne 0 ]; then
 			echo &quot;generate the jobs according the board devices error! Aborting&quot;
@@ -295,13 +305,13 @@ do
             [ $? -ne 0 ] &amp;&amp; python parser.py  -d $DISTRO  &amp;&amp;  mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue 
     	fi
 	fi 
-
+	echo &quot;the end time of deploy $DSITRO in PXE is &quot;${BUILD_TIMESTAMP_PATH}  &gt;&gt; $timefile
 	#########################################
 	##### Entering the sata disk rootfs #####
 	BOOT_FOR_TEST=BOOT_SATA
 	# generate the boot jobs for all the target
-    	generate_jobs $BOOT_FOR_TEST
-    	[ $? -ne 0 ] &amp;&amp; continue 
+    	generate_jobs $BOOT_FOR_TEST $DISTRO &quot;--SasFlag&quot;
+    	[ $? -ne 0 ] &amp;&amp; continue
         cd jobs
 		python ../create_boot_job.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM
 		if [ $? -ne 0 ]; then
@@ -314,6 +324,7 @@ do
 		run_and_move_result $BOOT_FOR_TEST $DISTRO
         [ $? -ne 0 ] &amp;&amp;  python parser.py  -d $DISTRO  &amp;&amp;  mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue 
 	fi
+    echo &quot;the end time of boot $DSITRO fromhard disk is &quot;${BUILD_TIMESTAMP_PATH}  &gt;&gt; $timefile
 	##### End of entering the sata disk #####
 	#########################################
 
@@ -339,6 +350,7 @@ do
 		run_and_move_result app $DISTRO
 		[ $? -ne 0 ] &amp;&amp; python parser.py  -d $DISTRO  &amp;&amp;  mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue 
 	fi
+    echo &quot;the end time of running app is &quot;${BUILD_TIMESTAMP_PATH}  &gt;&gt; $timefile
 	python parser.py  -d $DISTRO
     mv $DISTRO $GIT_DESCRIBE/results
 done
@@ -350,7 +362,7 @@ mkdir $DES_TMP
 for app_plan in $APP_PLAN
 do
     [[ $app_plan =~ &quot;BOOT&quot; ]] &amp;&amp; generate_jobs $app_plan
-    [ $? -ne 0 ] &amp;&amp; continue
+    [ ! -d jobs ] &amp;&amp; continue
 done
 if [ -d jobs ]; then
 	run_and_report_jobs 
@@ -359,15 +371,17 @@ if [ -d jobs ]; then
 	test -d results &amp;&amp; mv results $DES_TMP
     python parser.py -d $DES_TMP
     mv $DES_TMP $GIT_DESCRIBE/results
+    echo &quot;the end time of running boot tasks is &quot;${BUILD_TIMESTAMP_PATH}  &gt;&gt; $timefile
 fi 
 ##################################
+mv $timefile $GIT_DESCRIBE
 
 # push the binary files to the ftpserver
 #sudo python publish.py -j $TREE_NAME -d ./$GIT_DESCRIBE
 DES_DIR=$FTP_DIR/$TREE_NAME/$GIT_DESCRIBE/
 [ ! -d $DES_DIR ] &amp;&amp; echo &quot;Don&apos;t have the images and dtbs&quot; &amp;&amp; exit -1
 cd $GIT_DESCRIBE
-python parser.py -s results
+python ../parser.py -s results
 cd ..
 sudo cp -rf $GIT_DESCRIBE/*   $DES_DIR
 [ $? -ne 0 ]&amp;&amp; exit -1

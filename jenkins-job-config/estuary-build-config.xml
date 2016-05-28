@@ -140,7 +140,9 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>if [ ! -e opt ]; then
+      <command>#!/bin/bash
+
+if [ ! -e opt ]; then
   mkdir opt
 fi
 
@@ -247,6 +249,17 @@ function build_image_for_sata()
     cd ..
 }
 
+set -x
+
+timefile=&quot;timestamp.log&quot;
+if [ -f $timefile ]; then
+	rm -fr $timefile
+else
+	touch $timefile
+fi
+
+echo &quot;the begin time is &quot;${BUILD_TIMESTAMP_PATH}  &gt;&gt;  $timefile
+
 CPU_NUM=$(cat /proc/cpuinfo | grep processor | wc -l)
 
 export
@@ -258,6 +271,7 @@ if [ ! -e bin ]; then
 	wget -c http://www.open-estuary.com/EstuaryDownloads/tools/repo -O bin/repo
 	chmod a+x bin/repo; 
 fi 
+
 
 # get the newest content of git repos
 export PATH=${WORKSPACE}/bin:$PATH; 
@@ -279,7 +293,7 @@ if [ -e $open_estuary_dir ]; then
     cd ../..
 fi
 
-set -x
+echo &quot;the end time of finishing downloading  estuary is &quot;${BUILD_TIMESTAMP_PATH}  &gt;&gt; $timefile
 
 cd ${WORKSPACE}
 
@@ -387,6 +401,7 @@ do
       		sudo mkdir $DES_DISTRO/distro
       	fi
       	sudo cp distro/${distro_whole_name}*  $DES_DISTRO/distro
+        echo &quot;the end time of building $DISTRO is  ${BUILD_TIMESTAMP_PATH} &quot; &gt;&gt; $timefile
     done
     
     DES_DIR=$FTP_DIR/$TREE_NAME/$GIT_DESCRIBE/
@@ -395,8 +410,10 @@ do
     [ $? -ne 0 ]&amp;&amp; exit -1
     ls -l $GIT_DESCRIBE
 	sudo rm -fr $GIT_DESCRIBE
+    echo &quot;the end time of building for $PLATFORM is  ${BUILD_TIMESTAMP_PATH} &quot; &gt;&gt; $timefile
 done
 
+sudo cp -rf $timefile $DES_DIR
 #sudo rm -fr build
 
 # push the binary files to the ftpserver

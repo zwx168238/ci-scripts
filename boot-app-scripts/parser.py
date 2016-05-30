@@ -36,6 +36,7 @@ total_str = "Total number of test cases: "
 fail_str = "Failed number of test cases: "
 suc_str = "Success number of test cases: "
 
+# write summary for the special kind of test cases in the D02/Ubuntu
 def summary_for_kind(result_dir):
     for root, dirs, files in os.walk(result_dir):
         for filename in files:
@@ -87,7 +88,7 @@ def summary_for_kind(result_dir):
                                 fail_flag = re.findall('FAIL', case)
                                 if fail_flag:
                                     fail_num += 1
-                                    fail_cases.append(job_id[0] + '\n' + testname + '\t\t' + 'FAIL\n\n')
+                                    fail_cases.append(job_id[0] + '\n' + testname + '\t\t' + 'FAIL\n')
                         fd.write(total_str + str(total_num) + '\n')
                         fd.write(fail_str + str(fail_num) + '\n')
                         fd.write(suc_str + str(total_num - fail_num) + '\n')
@@ -133,6 +134,8 @@ def write_summary_for_app(result_dir):
                                                 fd.write('\t' + str(job_id) + '\t' + lines[i])
                                     except Exception:
                                         continue
+                                fd.write("\ttotal: %s  fail: %s  suc: %s\n" %\
+                                        (total_num_case, fail_num_case, suc_num_case))
                 dic_app_cases[board_type] = [total_num_case, fail_num_case, suc_num_case]
     return dic_app_cases
 
@@ -181,11 +184,15 @@ def write_summary_for_boot(boot_dir, dic_app_case):
                                 if re.findall('FAIL', lines[i]):
                                     total_num += 1
                                     fail_num += 1
-                                    fd.write('\t' + job_id + '\t' + board_type + '\t' + boot_name + '\t' + job_name + '\t' + 'FAIL\n')
+                                    fd.write('\t' + job_id + '\t' + board_type\
+                                            + '\t' + boot_name + '\t' + job_name\
+                                            + '\t' + 'FAIL\n')
                                 else:
                                     total_num += 1
                                     suc_num += 1
-                                    fd.write('\t' + job_id + '\t' + board_type + '\t' + boot_name + '\t' + job_name + '\t' + 'PASS\n')
+                                    fd.write('\t' + job_id + '\t' + board_type\
+                                            + '\t' + boot_name + '\t' + job_name\
+                                            + '\t' + 'PASS\n')
                         except IndexError:
                             continue
                         dic_boot_num[board_type] = [total_num, fail_num, suc_num]
@@ -222,7 +229,7 @@ def parser_all_files(result_dir):
     summary_path = os.path.join(result_dir, whole_summary_name)
     if os.path.exists(summary_path):
         os.remove(summary_path)
-    # get the each kind tests in each file
+    # get kind classfication in each file
     true_parser_path = os.path.join(result_dir, parser_result)
     if os.path.exists(true_parser_path):
         shutil.rmtree(true_parser_path)
@@ -235,6 +242,53 @@ def parser_all_files(result_dir):
         shutil.move(parser_result, result_dir)
     else:
         summary_for_board(result_dir, result_dir)
+
+def summary_for_apps(summary_dir, wfp):
+    total_num_app = 0
+    fail_num_app = 0
+    suc_num_app = 0
+    wfp.write("\n" + "*"*20 + " APPLICATION SUMMARY START " + "*"*20 + '\n')
+    dic_app = {}
+    for root, dirs, files in os.walk(summary_dir):
+        for filename in files:
+            if re.match(board_pre, filename):
+                flag = 0
+                # get the board type
+                board_type = filename.split(board_pre)[1]
+                if board_type not in dic_app.keys():
+                    dic_app[board_type] = {}
+                whole_path = os.path.join(root, filename)
+                # get the distro
+                distro = _get_distro(whole_path)
+                if distro == "":
+                    break
+                if distro not in dic_app[board_type].keys():
+                    dic_app[board_type][distro]={}
+                tmp_dic = dic_app[board_type][distro]
+                with open(whole_path) as rfd:
+                    contents = rfd.read()
+                    blocks = contents.split("\n\n")
+                    for block in blocks:
+                        all_test_category = re.findall("Test category:\s+(.*)\n", block)
+                        if all_test_category and block:
+                            test_category = all_test_category[0]
+                            values = re.findall(".+?\s(\d+)", block)
+                            if len(values) == 3:
+                                tmp_suc = int(values[2])
+                                suc_num_app += tmp_suc
+                                tmp_fail = int(values[1])
+                                fail_num_app += tmp_fail
+                                tmp_total = int(values[0])
+                                if tmp_total != tmp_fail + tmp_suc:
+                                    print "there is error when parsing result for %s %s %s" % (board_type, distro, test_category)
+                                    break
+                                total_num_app += tmp_total
+                            if test_category not in tmp_dic.keys():
+                                tmp_dic[test_category] = {'fail': tmp_fail, 'suc': tmp_suc}
+    #wfp.write(dic_app)
+    wfp.write("\n" + "*"*20 + " APPLICATION SUMMARY END " + "*"*20 + '\n')
+    print dic_app
+    return (total_num_app, fail_num_app, suc_num_app)
 
 def summary_all_files(summary_dir):
     summary_file = os.path.join(summary_dir, whole_summary_name)
@@ -259,35 +313,29 @@ def summary_all_files(summary_dir):
         wfp.write("\n" + suc_str + str(suc_num))
         wfp.write("\n" + "*"*20 + " BOOT SUMMARY END" + "*"*20 + '\n')
 
-        total_num_app = 0
-        fail_num_app = 0
-        suc_num_app = 0
-        wfp.write("\n" + "*"*20 + " APPLICATION SUMMARY START " + "*"*20 + '\n')
-        for root, dirs, files in os.walk(summary_dir):
-            for filename in files:
-                if re.match(board_pre, filename):
-                    flag = 0
-                    wfp.write(os.path.join(root, filename) + '\n')
-                    with open(os.path.join(root, filename)) as rfd:
-                        contents = rfd.read()
-                        wfp.write(contents)
-                        if re.findall(total_str + "(\d+)", contents):
-                            total_num_app += string.atoi(re.findall(total_str+"(\d+)", contents)[0])
-                        if re.findall(suc_str+"(\d+)", contents):
-                            suc_num_app += string.atoi(re.findall(suc_str+"(\d+)", contents)[0])
-                        if re.findall(fail_str+"(\d+)", contents):
-                            fail_num_app += string.atoi(re.findall(fail_str+"(\d+)", contents)[0])
-                    wfp.write("-"*60 + '\n')
-        wfp.write("\n" + total_str + str(total_num_app))
-        wfp.write("\n" + fail_str + str(fail_num_app))
-        wfp.write("\n" + suc_str + str(suc_num_app))
-        wfp.write("\n" + "*"*20 + " APPLICATION SUMMARY END " + "*"*20 + '\n')
+        (total_num_app, fail_num_app, suc_num_app) = \
+                summary_for_apps(summary_dir, wfp)
 
         wfp.write('\n' + "*"*20 + " SUMMARY START " + "*"*20 + '\n')
         wfp.write(total_str + str(total_num + total_num_app))
         wfp.write('\n' + fail_str + str(fail_num + fail_num_app))
         wfp.write('\n' + suc_str + str(suc_num + suc_num_app))
         wfp.write('\n' + "*"*20 + " SUMMARY END " + "*"*20 + '\n')
+
+def _get_distro(path):
+    distro = ""
+    if re.search("Ubuntu", path) or re.search("ubuntu", path):
+        distro = "Ubuntu"
+    elif re.search("OpenSuse", path) or re.search("opensuse", path):
+        distro = "OpenSuse"
+    elif re.search("CentOS", path) or re.search("centos", path):
+        distro = "CentOS"
+    elif re.search("Debian", path) or re.search("debian", path):
+        distro = "Debian"
+    else:
+        if re.search("Fedora", path) or re.search("fedora", path):
+            distro = "fedora"
+    return distro
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

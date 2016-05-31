@@ -17,8 +17,6 @@ import sys
 import shutil
 import argparse
 
-import pdb
-
 job_map = {}
 
 parser_result = 'parser_result'
@@ -243,6 +241,36 @@ def parser_all_files(result_dir):
     else:
         summary_for_board(result_dir, result_dir)
 
+def print_dic(dic_app, wfp):
+    if len(dic_app.keys()) <= 0:
+        return
+    for k, v in dic_app.iteritems():
+        wfp.write("The board is " + k + '\n')
+        distro_keys = v.keys()             # opensuse, ubuntu and so on
+        test_values = v.values()    # {'weekly_testing':{XXX}, 'network':{XXX}},{},
+        total_test_case = []
+        for test_value in test_values:
+            tmp_test_kind = test_value.keys()  # 'weekly_testing', 'network', ...
+            total_test_case = list(set(total_test_case).union(set(tmp_test_kind)))
+        # print the title
+        wfp.write('Distro\t')
+        for i in range(0, len(total_test_case)):
+            wfp.write(total_test_case[i]+'\t')
+        wfp.write('sum\n')
+        # print the distro and test case value
+        for distro in distro_keys:
+            total_fail = 0
+            total_suc = 0
+            wfp.write(distro + '\t')
+            for test_classify in total_test_case:
+                fail_num = v[distro][test_classify]['fail']
+                suc_num = v[distro][test_classify]['suc']
+                total_fail += fail_num
+                total_suc += suc_num
+                wfp.write('F:' + str(fail_num) + ' P:' + str(suc_num) + '\t')
+            wfp.write('F:' + str(total_fail) + ' P:' + str(total_suc) + '\n')
+    # end of the print
+
 def summary_for_apps(summary_dir, wfp):
     total_num_app = 0
     fail_num_app = 0
@@ -285,7 +313,7 @@ def summary_for_apps(summary_dir, wfp):
                                 total_num_app += tmp_total
                             if test_category not in tmp_dic.keys():
                                 tmp_dic[test_category] = {'fail': tmp_fail, 'suc': tmp_suc}
-    #wfp.write(dic_app)
+    print_dic(dic_app, wfp)
     wfp.write("\n" + "*"*20 + " APPLICATION SUMMARY END " + "*"*20 + '\n')
     print dic_app
     return (total_num_app, fail_num_app, suc_num_app)

@@ -28,7 +28,7 @@
         <hudson.model.StringParameterDefinition>
           <name>SHELL_PLATFORM</name>
           <description></description>
-          <defaultValue>D02 D01</defaultValue>
+          <defaultValue>D02 D03</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>SHELL_DISTRO</name>
@@ -218,6 +218,12 @@ function run_and_move_result()
 	test -d results_$1 &amp;&amp; mv results_$1 $2
 }
 
+
+function print_time()
+{
+	echo $@   &gt;&gt; $timefile
+}
+
 #######  Begining the tests ######
 timefile=&quot;timestamp_bk.log&quot;
 current_path=$(pwd)
@@ -247,7 +253,7 @@ if [ -f ${timefile} ]; then
 else
 	touch $timefile
 fi
-echo &quot;the begin time of boot test is &quot;${BUILD_TIMESTAMP_PATH}  &gt;&gt; $timefile
+print_time &quot;the begin time of boot test is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
 
 ##### copy some files to the lava-server machine to support the boot process #####
 set -x
@@ -283,7 +289,7 @@ mkdir -p $GIT_DESCRIBE/results
 
 rm -fr jobs*
 rm -fr results*
-echo &quot;the time of preparing all envireonment is &quot;${BUILD_TIMESTAMP_PATH}  &gt;&gt; $timefile
+print_time &quot;the time of preparing all envireonment is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
 for DISTRO in $SHELL_DISTRO; 
 do
 	[ -d $DISTRO ] &amp;&amp; rm -fr $DISTRO
@@ -305,7 +311,7 @@ do
             [ $? -ne 0 ] &amp;&amp; python parser.py  -d $DISTRO  &amp;&amp;  mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue 
     	fi
 	fi 
-	echo &quot;the end time of deploy $DSITRO in PXE is &quot;${BUILD_TIMESTAMP_PATH}  &gt;&gt; $timefile
+	print_time &quot;the end time of deploy $DSITRO in PXE is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
 	#########################################
 	##### Entering the sata disk rootfs #####
 	BOOT_FOR_TEST=BOOT_SATA
@@ -324,7 +330,7 @@ do
 		run_and_move_result $BOOT_FOR_TEST $DISTRO
         [ $? -ne 0 ] &amp;&amp;  python parser.py  -d $DISTRO  &amp;&amp;  mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue 
 	fi
-    echo &quot;the end time of boot $DSITRO fromhard disk is &quot;${BUILD_TIMESTAMP_PATH}  &gt;&gt; $timefile
+    print_time &quot;the end time of boot $DSITRO fromhard disk is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
 	##### End of entering the sata disk #####
 	#########################################
 
@@ -350,7 +356,7 @@ do
 		run_and_move_result app $DISTRO
 		[ $? -ne 0 ] &amp;&amp; python parser.py  -d $DISTRO  &amp;&amp;  mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue 
 	fi
-    echo &quot;the end time of running app is &quot;${BUILD_TIMESTAMP_PATH}  &gt;&gt; $timefile
+    print_time &quot;the end time of running app is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
 	python parser.py  -d $DISTRO
     mv $DISTRO $GIT_DESCRIBE/results
 done
@@ -371,7 +377,7 @@ if [ -d jobs ]; then
 	test -d results &amp;&amp; mv results $DES_TMP
     python parser.py -d $DES_TMP
     mv $DES_TMP $GIT_DESCRIBE/results
-    echo &quot;the end time of running boot tasks is &quot;${BUILD_TIMESTAMP_PATH}  &gt;&gt; $timefile
+    print_time &quot;the end time of running boot tasks is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
 fi 
 ##################################
 mv $timefile $GIT_DESCRIBE
@@ -384,6 +390,7 @@ cd $GIT_DESCRIBE
 python ../parser.py -s results
 cd ..
 sudo cp -rf $GIT_DESCRIBE/*   $DES_DIR
+sudo rm -fr $GIT_DESCRIBE
 [ $? -ne 0 ]&amp;&amp; exit -1
 
 cd $current_path

@@ -23,7 +23,7 @@
         <hudson.model.StringParameterDefinition>
           <name>SHELL_PLATFORM</name>
           <description></description>
-          <defaultValue>D02 D01</defaultValue>
+          <defaultValue>D02 D03</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>SHELL_DISTRO</name>
@@ -223,12 +223,12 @@ function build_image_for_sata()
     defconfig_file=arch/arm64/configs/defconfig
     dts_file=arch/arm64/boot/dts/hisilicon/hip05-d02.dts
     if [ -f ${defconfig_file}_bk ]; then
-    	rm -fr ${defconfig_file}_bk
+    	rm -fr ${defconfig_file}
         mv ${defconfig_file}_bk  ${defconfig_file}
     fi
     if [ -f ${dts_file}_bk ]; then
     	rm -fr ${dts_file}
-        mv ${dts_file}_bk  ${dts_file} 
+        mv ${dts_file}_bk  ${dts_file}
     fi
     cp ${defconfig_file} ${defconfig_file}_bk
     cp ${dts_file} ${dts_file}_bk
@@ -249,16 +249,21 @@ function build_image_for_sata()
     cd ..
 }
 
+function print_time()
+{
+echo  $@  &gt;&gt; $timefile
+}
+
 set -x
 
 timefile=&quot;timestamp.log&quot;
-if [ -f $timefile ]; then
-	rm -fr $timefile
+if [ -f  ${WORKSPACE}/$timefile ]; then
+	rm -fr  ${WORKSPACE}/$timefile
 else
-	touch $timefile
+	touch  ${WORKSPACE}/$timefile
 fi
 
-echo &quot;the begin time is &quot;${BUILD_TIMESTAMP_PATH}  &gt;&gt;  $timefile
+print_time &quot;the begin time is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
 
 CPU_NUM=$(cat /proc/cpuinfo | grep processor | wc -l)
 
@@ -293,7 +298,7 @@ if [ -e $open_estuary_dir ]; then
     cd ../..
 fi
 
-echo &quot;the end time of finishing downloading  estuary is &quot;${BUILD_TIMESTAMP_PATH}  &gt;&gt; $timefile
+print_time &quot;the end time of finishing downloading  estuary is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
 
 cd ${WORKSPACE}
 
@@ -401,19 +406,22 @@ do
       		sudo mkdir $DES_DISTRO/distro
       	fi
       	sudo cp distro/${distro_whole_name}*  $DES_DISTRO/distro
-        echo &quot;the end time of building $DISTRO is  ${BUILD_TIMESTAMP_PATH} &quot; &gt;&gt; $timefile
+        print_time &quot;the end time of building $DISTRO is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
     done
     
     DES_DIR=$FTP_DIR/$TREE_NAME/$GIT_DESCRIBE/
+    print_time &quot;the end time of building for $PLATFORM is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
+    cat  $timefile
+    #awk &apos;{for(i=1;i&lt;=NF;i++) if(i!=NF) printf(%-01s,$i) else print $i}&apos; $timefile
     [ ! -d $DES_DIR ] &amp;&amp; sudo mkdir -p $DES_DIR
     sudo cp -rf $GIT_DESCRIBE/*   $DES_DIR
     [ $? -ne 0 ]&amp;&amp; exit -1
     ls -l $GIT_DESCRIBE
 	sudo rm -fr $GIT_DESCRIBE
-    echo &quot;the end time of building for $PLATFORM is  ${BUILD_TIMESTAMP_PATH} &quot; &gt;&gt; $timefile
 done
 
-sudo cp -rf $timefile $DES_DIR
+sudo cp -rf $timefile $GIT_DESCRIBE
+sudo rm -fr $timefile
 #sudo rm -fr build
 
 # push the binary files to the ftpserver

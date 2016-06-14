@@ -4,7 +4,6 @@
   <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
-    <hudson.plugins.disk__usage.DiskUsageProperty plugin="disk-usage@0.28"/>
     <jenkins.model.BuildDiscarderProperty>
       <strategy class="hudson.tasks.LogRotator">
         <daysToKeep>-1</daysToKeep>
@@ -13,6 +12,7 @@
         <artifactNumToKeep>-1</artifactNumToKeep>
       </strategy>
     </jenkins.model.BuildDiscarderProperty>
+    <hudson.plugins.disk__usage.DiskUsageProperty plugin="disk-usage@0.28"/>
     <hudson.model.ParametersDefinitionProperty>
       <parameterDefinitions>
         <hudson.model.StringParameterDefinition>
@@ -53,12 +53,12 @@
         <hudson.model.StringParameterDefinition>
           <name>HOST</name>
           <description></description>
-          <defaultValue>192.168.1.106</defaultValue>
+          <defaultValue>114.119.4.74</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>LAVA_SERVER</name>
           <description></description>
-          <defaultValue>http://192.168.1.106/RPC2</defaultValue>
+          <defaultValue>http://114.119.4.74:800/RPC2</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>LAVA_USER</name>
@@ -73,7 +73,7 @@
         <hudson.model.StringParameterDefinition>
           <name>LAVA_TOKEN</name>
           <description></description>
-          <defaultValue>p53l26plbujbqaicsrkw0i1u3xu5qawxlx3imr41w3eiwg1y79jxtjkx209p2kccsc1obzy279c7ruydhskzotdlf6s3me0wb87o0rf71m0sehetlje9p0cr0dorkhf8</defaultValue>
+          <defaultValue>g43y0wtyi0m2ua7in3xtfch1m2s1dd0k97ac1fqqhqd0qblimtehqkwk8mjimsyh0jczrnaibdlb23mtn17qca6i14tcl27h7md580za5p8w81fl035b6bk1ybw26lle</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>KERNELCI_TOKEN</name>
@@ -83,17 +83,17 @@
         <hudson.model.StringParameterDefinition>
           <name>KERNELCI_SERVER</name>
           <description></description>
-          <defaultValue>http://192.168.1.108:8888/</defaultValue>
+          <defaultValue>http://114.119.4.74:8888/</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>FTP_SERVER</name>
           <description></description>
-          <defaultValue>http://192.168.1.108:8083</defaultValue>
+          <defaultValue>http://114.119.4.74:808</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>ARCH_MAP</name>
           <description></description>
-          <defaultValue>d03 arm64 d02 arm64 d01 arm32</defaultValue>
+          <defaultValue>d03 arm64 d02 arm64</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>TFTP_DIR</name>
@@ -108,7 +108,7 @@
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <scm class="hudson.plugins.git.GitSCM" plugin="git@2.4.0">
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@2.4.4">
     <configVersion>2</configVersion>
     <userRemoteConfigs>
       <hudson.plugins.git.UserRemoteConfig>
@@ -124,11 +124,13 @@
     <submoduleCfg class="list"/>
     <extensions>
       <hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
-        <relativeTargetDir>local/estuary_test</relativeTargetDir>
+        <relativeTargetDir>local/ci-scripts</relativeTargetDir>
       </hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
       <hudson.plugins.git.extensions.impl.CloneOption>
         <shallow>true</shallow>
+        <noTags>false</noTags>
         <reference></reference>
+        <depth>0</depth>
       </hudson.plugins.git.extensions.impl.CloneOption>
     </extensions>
   </scm>
@@ -142,26 +144,28 @@
     <hudson.tasks.Shell>
       <command>#!/bin/bash
 
+set -x
+
 if [ ! -e opt ]; then
-  mkdir opt
+	mkdir opt
 fi
 
-if [ ! -e opt/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu.tar.xz ]; then
-  cd opt
-  wget -q -c https://releases.linaro.org/15.02/components/toolchain/binaries/aarch64-linux-gnu/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu.tar.xz
-  tar -Jxf gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu.tar.xz
-  cd ..
+cd opt
+
+if [ ! -e gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu.tar.xz ]; then
+	wget -q -c https://releases.linaro.org/15.02/components/toolchain/binaries/aarch64-linux-gnu/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu.tar.xz
+	tar -Jxf gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu.tar.xz
 else
-	if [ ! -e opt/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu ]; then 
-    	cd opt
-    	tar -Jxf gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu.tar.xz
-        cd ..
+    if [ ! -e gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu ]; then
+        tar -Jxf gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu.tar.xz
     fi
 fi
 
+cd ..
 
-cd ${WORKSPACE}
-cd local/estuary_test/boot-app-scripts
+CI_SCRIPTS_DIR=${WORKSPACE}/local/ci-scripts
+pushd ${CI_SCRIPTS_DIR}/boot-app-scripts    # change current work directory
+
 : ${SHELL_PLATFORM:=`python parameter_parser.py -f config.yaml -s Build -k Platform`}
 : ${SHELL_DISTRO:=`python parameter_parser.py -f config.yaml -s Build -k Distro`}
 
@@ -170,6 +174,7 @@ cd local/estuary_test/boot-app-scripts
 
 : ${USER:=`python parameter_parser.py -f config.yaml -s LAVA -k USER`}
 : ${HOST:=`python parameter_parser.py -f config.yaml -s LAVA -k HOST`}
+
 : ${LAVA_SERVER:=`python parameter_parser.py -f config.yaml -s LAVA -k lavaserver`}
 : ${LAVA_USER:=`python parameter_parser.py -f config.yaml -s LAVA -k lavauser`}
 : ${LAVA_STREAM:=`python parameter_parser.py -f config.yaml -s LAVA -k lavastream`}
@@ -177,11 +182,14 @@ cd local/estuary_test/boot-app-scripts
 
 : ${KERNELCI_SERVER:=`python parameter_parser.py -f config.yaml -s Kernelci -k server`}
 : ${KERNELCI_TOKEN:=`python parameter_parser.py -f config.yaml -s Kernelci -k token`}
+
 : ${FTP_SERVER:=`python parameter_parser.py -f config.yaml -s Kernelci -k ftpserver`}
 
 echo $ARCH_MAP
 : ${ARCH_MAP:=`python parameter_parser.py -f config.yaml -s Arch`}
 echo $ARCH_MAP
+
+popd    # restore current work directory
 
 echo $GIT_DESCRIBE
 cat &lt;&lt; EOF &gt; ${WORKSPACE}/env.properties
@@ -210,7 +218,7 @@ cat ${WORKSPACE}/env.properties
       <info>
         <propertiesFilePath>env.properties</propertiesFilePath>
         <propertiesContent>LANG=C
-PATH=${WORKSPACE}/opt/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu/bin:$WORKSPACE/local/build-scripts:$PATH</propertiesContent>
+PATH=${WORKSPACE}/opt/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu/bin:${WORKSPACE}/local/ci-scripts/build-scripts:$PATH</propertiesContent>
       </info>
     </EnvInjectBuilder>
     <hudson.tasks.Shell>
@@ -218,10 +226,12 @@ PATH=${WORKSPACE}/opt/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu/bin:$WOR
 
 function build_image_for_sata()
 {
-    image_des_dir=$1
-    cd kernel
+    image_dir=$1
     defconfig_file=arch/arm64/configs/defconfig
     dts_file=arch/arm64/boot/dts/hisilicon/hip05-d02.dts
+
+    cd kernel
+
     if [ -f ${defconfig_file}_bk ]; then
     	rm -fr ${defconfig_file}
         mv ${defconfig_file}_bk  ${defconfig_file}
@@ -230,108 +240,110 @@ function build_image_for_sata()
     	rm -fr ${dts_file}
         mv ${dts_file}_bk  ${dts_file}
     fi
+
     cp ${defconfig_file} ${defconfig_file}_bk
     cp ${dts_file} ${dts_file}_bk
+
     sed -i &apos;s/CONFIG_SATA_MV=m/CONFIG_SATA_MV=y/g&apos; ${defconfig_file}
     SATA_BOOT=&quot;rdinit=/init root=/dev/sda2 rootdelay=10 rootfstype=ext4 rw console=ttyS0,115200 earlycon=uart8250,mmio32,0x80300000 ip=dhcp&quot;
     SAS_BOOT=&quot;earlycon=uart8250,mmio32,0x80300000 console=ttyS0,115200 initrd=0x7000000,350M&quot;
     sed -i &quot;s#$SAS_BOOT#$SATA_BOOT#g&quot;  ${dts_file}
-    export ARCH=arm64
-    echo $PATH
-    export CROSS_COMPILE=${WORKSPACE}/opt/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-
+
 	make defconfig
     make -j $CPU_NUM
-    cp ./arch/arm64/boot/Image  ../${image_des_dir}
-    cp ./arch/arm64/boot/dts/hisilicon/hip05-d02.dtb  ../${image_des_dir}
+    cp ./arch/arm64/boot/Image  ../${image_dir}
+    cp ./arch/arm64/boot/dts/hisilicon/hip05-d02.dtb  ../${image_dir}
+
     make clean
     rm -fr ${dts_file} &amp;&amp; mv ${dts_file}_bk ${dts_file}
     rm -fr ${defconfig_file} &amp;&amp; mv ${defconfig_file}_bk ${defconfig_file}
+
     cd ..
 }
 
 function print_time()
 {
-echo  $@  &gt;&gt; $timefile
+	echo  $@ `date &quot;+%Y-%m-%d %H:%M:%S&quot;` &gt;&gt; $timefile
 }
 
 set -x
 
-timefile=&quot;timestamp.log&quot;
-if [ -f  ${WORKSPACE}/$timefile ]; then
-	rm -fr  ${WORKSPACE}/$timefile
-else
-	touch  ${WORKSPACE}/$timefile
-fi
-
-print_time &quot;the begin time is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
+export ARCH=arm64
+export CROSS_COMPILE=${WORKSPACE}/opt/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-
+export
 
 CPU_NUM=$(cat /proc/cpuinfo | grep processor | wc -l)
 
-export
+CI_SCRIPTS_DIR=${WORKSPACE}/local/ci-scripts
+OPEN_ESTUARY_DIR=${WORKSPACE}/local/open-estuary
 
-cd ${WORKSPACE}
+timefile=${WORKSPACE}/timestamp.log
+if [ -f $timefile ]; then
+	rm -fr $timefile
+else
+	touch $timefile
+fi
 
+print_time &quot;the begin time is &quot;
+
+# prepare repo tool
 if [ ! -e bin ]; then 
 	mkdir -p bin;
 	wget -c http://www.open-estuary.com/EstuaryDownloads/tools/repo -O bin/repo
 	chmod a+x bin/repo; 
-fi 
+fi
 
+export PATH=${WORKSPACE}/bin:$PATH;
 
 # get the newest content of git repos
-export PATH=${WORKSPACE}/bin:$PATH; 
-open_estuary_dir=local/open-estuary 
-if [ ! -e $open_estuary_dir ]; then
-	mkdir -p $open_estuary_dir; 
-fi
-if [ -e $open_estuary_dir ]; then
-	cd $open_estuary_dir;
-    repo abandon master
-    repo forall -c git reset --hard
-    if [ &quot;$VERSION&quot;x != &quot;&quot;x ]; then
-		repo init -u &quot;https://github.com/open-estuary/estuary.git&quot; -b refs/tags/$VERSION --no-repo-verify --repo-url=git://android.git.linaro.org/tools/repo
-    else
-		repo init -u &quot;https://github.com/open-estuary/estuary.git&quot; -b master --no-repo-verify --repo-url=git://android.git.linaro.org/tools/repo
-    fi		
-    false; while [ $? -ne 0 ]; do repo sync; done
-	repo start master --all
-    cd ../..
+if [ ! -e $OPEN_ESTUARY_DIR ]; then
+	mkdir -p $OPEN_ESTUARY_DIR;
 fi
 
-print_time &quot;the end time of finishing downloading  estuary is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
+pushd $OPEN_ESTUARY_DIR;    # change current work directory
 
-cd ${WORKSPACE}
+repo abandon master
+repo forall -c git reset --hard
 
-cd $open_estuary_dir
+if [ &quot;$VERSION&quot;x != &quot;&quot;x ]; then
+	repo init -u &quot;https://github.com/open-estuary/estuary.git&quot; -b refs/tags/$VERSION --no-repo-verify --repo-url=git://android.git.linaro.org/tools/repo
+else
+	repo init -u &quot;https://github.com/open-estuary/estuary.git&quot; -b master --no-repo-verify --repo-url=git://android.git.linaro.org/tools/repo
+fi
+
+false; while [ $? -ne 0 ]; do repo sync; done
+repo start master --all
+
+print_time &quot;the end time of finishing downloading  estuary is &quot;
 
 ############## get the GIT_DESCRIBE ######################
-if [ &quot;$VERSION&quot;x = &quot;&quot;x ]; then
+if [ &quot;$VERSION&quot;x != &quot;&quot;x ]; then
+	GIT_DESCRIBE=$VERSION
+else
 	#### get uefi commit
 	pushd uefi
 	UEFI_GIT_DESCRIBE=&apos;uefi_&apos;$(git log --oneline | head -1 | awk &apos;{print $1}&apos;)
 	popd
+
 	#### get kernel commit
 	pushd kernel
 	KERNEL_GIT_DESCRIBE=&apos;kernel_&apos;$(git log --oneline | head -1 | awk &apos;{print $1}&apos;)
 	popd
+
 	#### get grub commit 
 	pushd grub
 	GURB_GIT_DESCRIBE=&apos;grub_&apos;$(git log --oneline | head -1 | awk &apos;{print $1}&apos;)
 	popd
 
 	GIT_DESCRIBE=$UEFI_GIT_DESCRIBE&quot;_&quot;$GURB_GIT_DESCRIBE&quot;_&quot;$KERNEL_GIT_DESCRIBE
-else
-	GIT_DESCRIBE=$VERSION
 fi
-
+############## END of GIT_DESCRIBE ######################
 
 if [ -d $GIT_DESCRIBE ]; then
 	sudo rm -fr $GIT_DESCRIBE
 fi
-mkdir $GIT_DESCRIBE
-############## END of GIT_DESCRIBE ######################
 
-echo $SHELL_DISTRO
+mkdir $GIT_DESCRIBE
 
 read -a arch &lt;&lt;&lt; $(echo $ARCH_MAP)
 declare -A dict
@@ -343,24 +355,34 @@ do
     fi      
 done
 
-set -x
+# unset HOST variable to fix acpica compile error for the first build
+HOST_BAK=$HOST
+unset HOST
+
+echo $SHELL_PLATFORM
+echo $SHELL_DISTRO
+
 for PLATFORM in $SHELL_PLATFORM
 do
-	PLATFORM_1=&quot;$(echo $PLATFORM | tr &apos;[:upper:]&apos; &apos;[:lower:]&apos;)&quot;
-    echo ${dict[$PLATFORM_1]}
-    DES_DISTRO=$GIT_DESCRIBE/${PLATFORM_1}-${dict[$PLATFORM_1]}
-    [ -d $DES_DISTRO ] &amp;&amp; rm -fr $DES_DISTRO
-    mkdir -p $DES_DISTRO
+	echo $PLATFORM
+	PLATFORM_L=&quot;$(echo $PLATFORM | tr &apos;[:upper:]&apos; &apos;[:lower:]&apos;)&quot;
+    echo ${dict[$PLATFORM_L]}
+
+    DISTRO_DIR=$GIT_DESCRIBE/${PLATFORM_L}-${dict[$PLATFORM_L]}
+    [ -d $DISTRO_DIR ] &amp;&amp; rm -fr $DISTRO_DIR
+    mkdir -p $DISTRO_DIR
+
 	for DISTRO in $SHELL_DISTRO
     do
-    	echo $PLATFORM
         echo $DISTRO
-        current_path=$PWD
-        cd ../estuary_test/boot-app-scripts
+
+        pushd ${CI_SCRIPTS_DIR}/boot-app-scripts
         plat_distros=`python parameter_parser.py -f config.yaml  -s DISTRO -k $PLATFORM`
         distro_whole_name=`python parameter_parser.py -f config.yaml  -s DISTRO -k $PLATFORM -v $DISTRO`
-        cd $current_path
+        popd
+
         [[ ${plat_distros/$DISTRO//} == $plat_distros ]] &amp;&amp; continue
+
 		./estuary/build.sh -p $PLATFORM -d $DISTRO
 		if [ $? -ne 0 ]; then
 			exit -1
@@ -394,38 +416,44 @@ do
       
       	# move the build file to the $GIT_DESCRIBE file
       	ls -l build
-      	if [ ! -d $DES_DISTRO/binary ]; then
-      		#sudo mv build/$PLATFORM/binary  $GIT_DESCRIBE
-        	sudo cp -r build/$PLATFORM/binary  $DES_DISTRO
+        if [ ! -d $DISTRO_DIR/binary ]; then
+        	sudo cp -r build/$PLATFORM/binary  $DISTRO_DIR
       	fi
-      	if [ ! -d $DES_DISTRO/toolchain ]; then
-        	#sudo mv build/$PLATFORM/toolchain  $GIT_DESCRIBE
-      	  	sudo cp -r build/$PLATFORM/toolchain  $DES_DISTRO
+        
+      	if [ ! -d $DISTRO_DIR/toolchain ]; then
+      	  	sudo cp -r build/$PLATFORM/toolchain  $DISTRO_DIR
       	fi
-      	if [ ! -d $DES_DISTRO/distro ]; then
-      		sudo mkdir $DES_DISTRO/distro
+        
+      	if [ ! -d $DISTRO_DIR/distro ]; then
+      		sudo mkdir -p $DISTRO_DIR/distro
       	fi
-      	sudo cp distro/${distro_whole_name}*  $DES_DISTRO/distro
-        print_time &quot;the end time of building $DISTRO is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
+        
+      	sudo cp distro/${distro_whole_name}*  $DISTRO_DIR/distro
+        print_time &quot;the end time of building $DISTRO is &quot;
     done
     
+    print_time &quot;the end time of building for $PLATFORM is &quot;
+    
     DES_DIR=$FTP_DIR/$TREE_NAME/$GIT_DESCRIBE/
-    print_time &quot;the end time of building for $PLATFORM is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
-    cat  $timefile
-    #awk &apos;{for(i=1;i&lt;=NF;i++) if(i!=NF) printf(%-01s,$i) else print $i}&apos; $timefile
     [ ! -d $DES_DIR ] &amp;&amp; sudo mkdir -p $DES_DIR
-    sudo cp -rf $GIT_DESCRIBE/*   $DES_DIR
-    [ $? -ne 0 ]&amp;&amp; exit -1
+    
+    sudo cp -rf $GIT_DESCRIBE/* $DES_DIR
+    [ $? -ne 0 ] &amp;&amp; exit -1
+    
     ls -l $GIT_DESCRIBE
 	sudo rm -fr $GIT_DESCRIBE
 done
 
-sudo cp -rf $timefile $GIT_DESCRIBE
+HOST=$HOST_BAK    # restore HOST variable
+
+sudo cp -rf $timefile $DES_DIR
 sudo rm -fr $timefile
 #sudo rm -fr build
 
+popd    # restore current work directory
+
 # push the binary files to the ftpserver
-#sudo python ../estuary_test/boot-app-scripts/publish.py -j open-estuary -p $PLATFORM -d ./$GIT_DESCRIBE
+#sudo python ${CI_SCRIPTS_DIR}/boot-app-scripts/publish.py -j open-estuary -p $PLATFORM -d ./$GIT_DESCRIBE
 
 echo $GIT_DESCRIBE
 cat &lt;&lt; EOF &gt; ${WORKSPACE}/env.properties
@@ -448,20 +476,16 @@ TFTP_DIR=$TFTP_DIR
 EOF
 
 cat ${WORKSPACE}/env.properties
-
-
-cd ../..
-
 </command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
-    <hudson.tasks.Mailer plugin="mailer@1.16">
-      <recipients>wuyanjun1027@163.com  </recipients>
+    <hudson.tasks.Mailer plugin="mailer@1.17">
+      <recipients>wuyanjun1027@163.com  fanghuangcai@163.com</recipients>
       <dontNotifyEveryUnstableBuild>false</dontNotifyEveryUnstableBuild>
       <sendToIndividuals>false</sendToIndividuals>
     </hudson.tasks.Mailer>
-    <hudson.plugins.parameterizedtrigger.BuildTrigger plugin="parameterized-trigger@2.29">
+    <hudson.plugins.parameterizedtrigger.BuildTrigger plugin="parameterized-trigger@2.30">
       <configs>
         <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
           <configs>
@@ -481,6 +505,6 @@ cd ../..
     </hudson.plugins.parameterizedtrigger.BuildTrigger>
   </publishers>
   <buildWrappers>
-    <hudson.plugins.timestamper.TimestamperBuildWrapper plugin="timestamper@1.7.2"/>
+    <hudson.plugins.timestamper.TimestamperBuildWrapper plugin="timestamper@1.8.2"/>
   </buildWrappers>
 </project>

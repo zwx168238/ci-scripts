@@ -4,7 +4,6 @@
   <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
-    <hudson.plugins.disk__usage.DiskUsageProperty plugin="disk-usage@0.28"/>
     <jenkins.model.BuildDiscarderProperty>
       <strategy class="hudson.tasks.LogRotator">
         <daysToKeep>30</daysToKeep>
@@ -13,6 +12,7 @@
         <artifactNumToKeep>-1</artifactNumToKeep>
       </strategy>
     </jenkins.model.BuildDiscarderProperty>
+    <hudson.plugins.disk__usage.DiskUsageProperty plugin="disk-usage@0.28"/>
     <hudson.model.ParametersDefinitionProperty>
       <parameterDefinitions>
         <hudson.model.StringParameterDefinition>
@@ -53,12 +53,12 @@
         <hudson.model.StringParameterDefinition>
           <name>HOST</name>
           <description></description>
-          <defaultValue>192.168.1.106</defaultValue>
+          <defaultValue>114.119.4.74/</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>LAVA_SERVER</name>
           <description></description>
-          <defaultValue>http://192.168.1.106/RPC2</defaultValue>
+          <defaultValue>http://114.119.4.74:800/RPC2</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>LAVA_USER</name>
@@ -73,17 +73,17 @@
         <hudson.model.StringParameterDefinition>
           <name>LAVA_TOKEN</name>
           <description></description>
-          <defaultValue>p53l26plbujbqaicsrkw0i1u3xu5qawxlx3imr41w3eiwg1y79jxtjkx209p2kccsc1obzy279c7ruydhskzotdlf6s3me0wb87o0rf71m0sehetlje9p0cr0dorkhf8</defaultValue>
+          <defaultValue>g43y0wtyi0m2ua7in3xtfch1m2s1dd0k97ac1fqqhqd0qblimtehqkwk8mjimsyh0jczrnaibdlb23mtn17qca6i14tcl27h7md580za5p8w81fl035b6bk1ybw26lle</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>FTP_SERVER</name>
           <description></description>
-          <defaultValue>http://192.168.1.108:8083</defaultValue>
+          <defaultValue>http://114.119.4.74:808</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>KERNELCI_SERVER</name>
           <description></description>
-          <defaultValue>http://192.168.1.108:8888</defaultValue>
+          <defaultValue>http://114.119.4.74:8888/</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>KERNELCI_TOKEN</name>
@@ -93,7 +93,7 @@
         <hudson.model.StringParameterDefinition>
           <name>ARCH_MAP</name>
           <description></description>
-          <defaultValue>d03 arm64 d02 arm64 d01 arm32</defaultValue>
+          <defaultValue>d03 arm64 d02 arm64</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>TFTP_DIR</name>
@@ -108,7 +108,7 @@
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <scm class="hudson.plugins.git.GitSCM" plugin="git@2.4.0">
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@2.4.4">
     <configVersion>2</configVersion>
     <userRemoteConfigs>
       <hudson.plugins.git.UserRemoteConfig>
@@ -129,11 +129,13 @@
     <submoduleCfg class="list"/>
     <extensions>
       <hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
-        <relativeTargetDir>local/lava-ci</relativeTargetDir>
+        <relativeTargetDir>local/ci-scripts</relativeTargetDir>
       </hudson.plugins.git.extensions.impl.RelativeTargetDirectory>
       <hudson.plugins.git.extensions.impl.CloneOption>
         <shallow>true</shallow>
+        <noTags>false</noTags>
         <reference></reference>
+        <depth>0</depth>
       </hudson.plugins.git.extensions.impl.CloneOption>
     </extensions>
   </scm>
@@ -146,18 +148,14 @@
   <builders>
     <hudson.tasks.Shell>
       <command>#!/bin/bash
-set -x
-
-export 
-
-BOOT_LOC=/targetNFS/ubuntu_for_deployment/sys_setup/bin
 
 function generate_jobs()
 {
 	test_name=$1
     distro=$2
     harddisk_flag=$3
-   	rm -fr  jobs  results
+    
+   	rm -fr jobs results
 	for PLAT in $SHELL_PLATFORM 
 	do
     	board_arch=${dict[$PLAT]}
@@ -178,10 +176,12 @@ function run_and_report_jobs()
 	cd jobs
 	python ../lava-job-runner.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM --poll POLL
 	cd ..
+
 	if [ ! -f jobs/results/POLL ]; then
 		echo &quot;Running the boot jobs error! Aborting&quot;
     	return -1
 	fi
+
 	python lava-report.py --boot jobs/results/POLL --lab $LAVA_USER --api $KERNELCI_SERVER --token $KERNELCI_TOKEN
 
 	if [ ! -d results ]; then
@@ -209,31 +209,56 @@ function run_and_move_result()
 {
     run_and_report_jobs 
 	[ $? -ne 0 ] &amp;&amp; return -1
+
 	judge_pass_or_not
 	[ $? -ne 0 ] &amp;&amp; return -1
-	test -d results  &amp;&amp; mv results results_$1
-	test -d jobs  &amp;&amp; mv jobs jobs_$1
-    [ ! -d $2 ]&amp;&amp; mkdir -p $2
+    
+	test -d results &amp;&amp; mv results results_$1
+	test -d jobs &amp;&amp; mv jobs jobs_$1
+    
+    [ ! -d $2 ] &amp;&amp; mkdir -p $2
     test -d jobs_$1 &amp;&amp; mv jobs_$1 $2
 	test -d results_$1 &amp;&amp; mv results_$1 $2
 }
 
-
 function print_time()
 {
-	echo $@   &gt;&gt; $timefile
+	echo $@ `date &quot;+%Y-%m-%d %H:%M:%S&quot;` &gt;&gt; $timefile
 }
 
+set -x
+export
+
 #######  Begining the tests ######
-timefile=&quot;timestamp_bk.log&quot;
-current_path=$(pwd)
-set +x
-DEVCCE_IP=&apos;device_ip_type.txt&apos;
+timefile=${WORKSPACE}/timestamp_bk.log
+if [ -f ${timefile} ]; then
+	rm -fr $timefile
+else
+	touch $timefile
+fi
 
-cd local/lava-ci/boot-app-scripts
-rm -fr jobs
+print_time &quot;the begin time of boot test is &quot;
 
-test -d $GIT_DESCRIBE &amp;&amp; rm -fr $GIT_DESCRIBE
+##### copy some files to the lava-server machine to support the boot process #####
+set -e
+
+echo $TFTP_DIR
+scp download_all_file.py download_distros.sh $USER@$HOST:$TFTP_DIR
+if [ $? -ne 0 ]; then
+	echo &apos;Upload download tools failed&apos;
+    exit -1
+fi
+
+ssh $USER@$HOST &quot;cd $TFTP_DIR; test -d download &amp;&amp; rm -fr download; mkdir download;&quot;
+ssh $USER@$HOST &quot;cd $TFTP_DIR/download; python ../download_all_file.py -u $FTP_SERVER -t $KERNELCI_TOKEN -d $GIT_DESCRIBE -j $TREE_NAME;&quot;
+ssh $USER@$HOST &quot;cd $TFTP_DIR/download; cp -rf *dtb sata_image ~/;  rm -fr download_all_file.py; &quot;
+
+BOOT_LOC=/targetNFS/ubuntu_for_deployment/sys_setup/bin
+ssh jenkins@$HOST &quot;cd $TFTP_DIR/download; sudo cp -f *.dtb *Image* $BOOT_LOC;&quot;
+if [ $? -ne 0 ]; then
+	echo &apos;Can not login the tftp server&apos;
+    exit -1
+fi
 
 read -a arch &lt;&lt;&lt; $(echo $ARCH_MAP)
 declare -A dict
@@ -242,100 +267,84 @@ do
     if ((i%2==0)); then
         j=`expr $i+1`
         dict[${arch[$i]}]=${arch[$j]}
-    fi      
+    fi
 done
 
 SHELL_PLATFORM=&quot;$(echo $SHELL_PLATFORM | tr &apos;[:upper:]&apos; &apos;[:lower:]&apos;)&quot;
 
-
-if [ -f ${timefile} ]; then
-	rm -fr  $timefile
-else
-	touch $timefile
-fi
-print_time &quot;the begin time of boot test is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
-
-##### copy some files to the lava-server machine to support the boot process #####
-set -x
-set -e
-echo $TFTP_DIR
-scp download_all_file.py download_distros.sh  $USER@$HOST:$TFTP_DIR
-if [ $? -ne 0 ]; then
-	echo &apos;Downloading binaries failed&apos;
-    exit -1
-fi
-ssh $USER@$HOST  &quot;cd $TFTP_DIR; test -d download &amp;&amp; rm -fr download; mkdir download;&quot;
-ssh $USER@$HOST  &quot;cd $TFTP_DIR/download; python ../download_all_file.py -u $FTP_SERVER -t $KERNELCI_TOKEN -d $GIT_DESCRIBE -j $TREE_NAME;&quot;
-ssh $USER@$HOST &quot;cd $TFTP_DIR/download; cp -rf *dtb sata_image ~/;  rm -fr download_all_file.py; &quot;
-ssh jenkins@$HOST &quot;cd $TFTP_DIR/download; sudo cp -f *.dtb *Image* $BOOT_LOC;&quot;
-if [ $? -ne 0 ]; then
-	echo &apos;Can not login the tftp server&apos;
-    exit -1
-fi
 for DISTRO in $SHELL_DISTRO;
 do
 	for PLAT in $SHELL_PLATFORM;
     do
     	board_arch=${dict[$PLAT]}
         URL_NAME=$FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}
-		ssh jenkins@$HOST  &quot;cd $TFTP_DIR; sudo ./download_distros.sh $DISTRO $URL_NAME ${board_arch} $PLAT&quot;
+		ssh jenkins@$HOST &quot;cd $TFTP_DIR; sudo ./download_distros.sh $DISTRO $URL_NAME ${board_arch} $PLAT&quot;
     done
 done
+
 set +e
 ##### Finish copying files to the lava-server machine #####
 
-[ -d $GIT_DESCRIBE/results ]&amp;&amp; rm -fr $GIT_DESCRIBE/results
-mkdir -p $GIT_DESCRIBE/results
+CI_SCRIPTS_DIR=${WORKSPACE}/local/ci-scripts
+pushd ${CI_SCRIPTS_DIR}/boot-app-scripts    # change current work directory
 
 rm -fr jobs*
 rm -fr results*
-print_time &quot;the time of preparing all envireonment is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
+
+test -d $GIT_DESCRIBE &amp;&amp; rm -fr $GIT_DESCRIBE
+mkdir -p $GIT_DESCRIBE/results
+
+print_time &quot;the time of preparing all envireonment is &quot;
+
 for DISTRO in $SHELL_DISTRO; 
 do
 	[ -d $DISTRO ] &amp;&amp; rm -fr $DISTRO
     mkdir $DISTRO
+
 	# generate the boot jobs for all the targets
 	if [ &apos;$BOOT_PLAN&apos;x != &apos;&apos;x ]; then
 		generate_jobs $BOOT_PLAN $DISTRO
-		# create the boot jobs for each target and run all these jobs
         [ $? -ne 0 ] &amp;&amp; continue
+
+		# create the boot jobs for each target and run all these jobs
         cd jobs
 		python ../create_boot_job.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM
 		if [ $? -ne 0 ]; then
 			echo &quot;generate the jobs according the board devices error! Aborting&quot;
 			continue
 		fi
+
 		cd ..
-    	if [ -d jobs ]; then
-			run_and_move_result $BOOT_PLAN $DISTRO
-            [ $? -ne 0 ] &amp;&amp; python parser.py  -d $DISTRO  &amp;&amp;  mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue 
-    	fi
+        run_and_move_result $BOOT_PLAN $DISTRO
+        [ $? -ne 0 ] &amp;&amp; python parser.py -d $DISTRO &amp;&amp; mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue
 	fi 
-	print_time &quot;the end time of deploy $DSITRO in PXE is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
+    
+	print_time &quot;the end time of deploy $DSITRO in PXE is &quot;
+    
 	#########################################
 	##### Entering the sata disk rootfs #####
-	BOOT_FOR_TEST=BOOT_SATA
 	# generate the boot jobs for all the target
-    	generate_jobs $BOOT_FOR_TEST $DISTRO &quot;--SasFlag&quot;
-    	[ $? -ne 0 ] &amp;&amp; continue
-        cd jobs
-		python ../create_boot_job.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM
-		if [ $? -ne 0 ]; then
-			echo &quot;generate the jobs according the board devices error! Aborting&quot;
-            cd ..
-			python parser.py  -d $DISTRO  &amp;&amp;  mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue 
-		fi
-		cd ..
-	if [ -d jobs ]; then
-		run_and_move_result $BOOT_FOR_TEST $DISTRO
-        [ $? -ne 0 ] &amp;&amp;  python parser.py  -d $DISTRO  &amp;&amp;  mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue 
+    BOOT_FOR_TEST=BOOT_SATA
+    generate_jobs $BOOT_FOR_TEST $DISTRO &quot;--SasFlag&quot;
+    [ $? -ne 0 ] &amp;&amp; continue
+        
+    cd jobs
+	python ../create_boot_job.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM
+	if [ $? -ne 0 ]; then
+		echo &quot;generate the jobs according the board devices error! Aborting&quot;
+        cd .. &amp;&amp; python parser.py -d $DISTRO &amp;&amp; mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue 
 	fi
-    print_time &quot;the end time of boot $DSITRO fromhard disk is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
+    
+	cd ..
+	run_and_move_result $BOOT_FOR_TEST $DISTRO
+    [ $? -ne 0 ] &amp;&amp; python parser.py -d $DISTRO &amp;&amp; mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue 
+    
+    print_time &quot;the end time of boot $DSITRO fromhard disk is &quot;
 	##### End of entering the sata disk #####
 	#########################################
-
-
+    
 	#####  modify the ip address according to the boot information
+    DEVCCE_IP=&apos;device_ip_type.txt&apos;
 	ssh $HOST -l $USER  &quot;cd /etc/lava-dispatcher/devices; rm -fr $DEVCCE_IP&quot;
 	scp $DISTRO/results_${BOOT_FOR_TEST}/${LAVA_USER}/${DEVCCE_IP} $USER@$HOST:/etc/lava-dispatcher/devices
 	scp modify_conf_file.sh  $USER@$HOST:/etc/lava-dispatcher/devices
@@ -349,62 +358,74 @@ do
 	for app_plan in $APP_PLAN
 	do
 		[[ $app_plan =~ &quot;BOOT&quot; ]] &amp;&amp; continue
+        
     	generate_jobs $app_plan
-        [ $? -ne 0 ] &amp;&amp; python parser.py  -d $DISTRO  &amp;&amp;  mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue 
+        [ $? -ne 0 ] &amp;&amp; python parser.py -d $DISTRO &amp;&amp; mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue 
 	done
+    
 	if [ -d jobs ]; then
 		run_and_move_result app $DISTRO
-		[ $? -ne 0 ] &amp;&amp; python parser.py  -d $DISTRO  &amp;&amp;  mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue 
+		[ $? -ne 0 ] &amp;&amp; python parser.py -d $DISTRO &amp;&amp; mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue 
 	fi
-    print_time &quot;the end time of running app is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
-	python parser.py  -d $DISTRO
+    
+    print_time &quot;the end time of running app is &quot;
+    
+	python parser.py -d $DISTRO
     mv $DISTRO $GIT_DESCRIBE/results
 done
 ##################################
+
 DES_TMP=boot_results
 [ -d $DES_TMP ] &amp;&amp; rm -fr $DES_TMP
 mkdir $DES_TMP
+
 # generate the application jobs for the board_types 
 for app_plan in $APP_PLAN
 do
     [[ $app_plan =~ &quot;BOOT&quot; ]] &amp;&amp; generate_jobs $app_plan
     [ ! -d jobs ] &amp;&amp; continue
 done
+
 if [ -d jobs ]; then
 	run_and_report_jobs 
 	[ $? -ne 0 ] &amp;&amp; exit -1
+    
 	test -d jobs &amp;&amp; mv jobs $DES_TMP
 	test -d results &amp;&amp; mv results $DES_TMP
+    
     python parser.py -d $DES_TMP
     mv $DES_TMP $GIT_DESCRIBE/results
-    print_time &quot;the end time of running boot tasks is &quot; `date &quot;+%Y-%m-%d %H:%M:%S&quot;`
+    
+    print_time &quot;the end time of running boot tasks is &quot;
 fi 
 ##################################
+
 mv $timefile $GIT_DESCRIBE
 
 # push the binary files to the ftpserver
 #sudo python publish.py -j $TREE_NAME -d ./$GIT_DESCRIBE
 DES_DIR=$FTP_DIR/$TREE_NAME/$GIT_DESCRIBE/
 [ ! -d $DES_DIR ] &amp;&amp; echo &quot;Don&apos;t have the images and dtbs&quot; &amp;&amp; exit -1
-cd $GIT_DESCRIBE
+
+pushd $GIT_DESCRIBE
 python ../parser.py -s results
-cd ..
-sudo cp -rf $GIT_DESCRIBE/*   $DES_DIR
-sudo rm -fr $GIT_DESCRIBE
+popd
+
+sudo cp -rf $GIT_DESCRIBE/* $DES_DIR
 [ $? -ne 0 ]&amp;&amp; exit -1
 
-cd $current_path
+popd    # restore current work directory
 </command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
-    <hudson.tasks.Mailer plugin="mailer@1.16">
-      <recipients>wuyanjun1027@163.com  1124281517@qq.com</recipients>
+    <hudson.tasks.Mailer plugin="mailer@1.17">
+      <recipients>wuyanjun1027@163.com  1124281517@qq.com fanghuangcai@163.com</recipients>
       <dontNotifyEveryUnstableBuild>false</dontNotifyEveryUnstableBuild>
       <sendToIndividuals>false</sendToIndividuals>
     </hudson.tasks.Mailer>
   </publishers>
   <buildWrappers>
-    <hudson.plugins.timestamper.TimestamperBuildWrapper plugin="timestamper@1.7.2"/>
+    <hudson.plugins.timestamper.TimestamperBuildWrapper plugin="timestamper@1.8.2"/>
   </buildWrappers>
 </project>

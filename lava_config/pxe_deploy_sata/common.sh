@@ -174,7 +174,6 @@ wait_user_choose()
 	exit_flag=0
 
 	opt_list=$( echo "$2" | sed -e 's/[ \t\n]*|[ \t\n]*/ /g' )
-	#read -a option <<< echo $opt_list
 	assert_flag=""
 	while [ $exit_flag != 1 ]; do
 		echo "$1:($2)"
@@ -190,7 +189,6 @@ wait_user_choose()
 para_sel()
 {
 	local arr_ref=${1}[@]
-	#echo "local variable name is "$arr_ref $2
 
 	local arr_val=( "${!arr_ref}" )
 	echo "${!arr_ref}"
@@ -253,10 +251,7 @@ move_array_unset()
 
         echo "${arr_var[@]}"
         cmd_str="$1=( \"${arr_var[@]}\" )"
-        #disk_list=( "${arr_var[@]}" )
 }
-
-
 
 
 move_array_unset_old()
@@ -268,7 +263,6 @@ move_array_unset_old()
 	local i=0
 	local max_idx="$3"
 
-	#(( max_idx=${#arr_var[@]} + $counter ))
 	while [ $idx \< $max_idx ]; do
 		echo "$idx   ${arr_var[idx]}"
 		[ -v ${arr_var[idx]} ] && { (( idx++ )); continue; }
@@ -280,7 +274,6 @@ move_array_unset_old()
 	(( i=$idx + 1 ))
 	echo "input array is ""${arr_var[@]}"
 	while [ $i \< $max_idx -a $idx \< $max_idx ]; do
-		#[ -n ${arr_var[i]} ] || { (( i++ )); echo "media=$i"; continue; }
 		if [ -z ${arr_var[i]} ]; then
 			echo "next nonset=$i"
 			(( i++ ))
@@ -292,8 +285,126 @@ move_array_unset_old()
 		(( i++ ))
 		echo "${arr_var[@]} idx=$idx i=$i"
 	done
-	#echo "${arr_var[@]}"
 	cmd_str="$1=( \"${arr_var[@]}\" )"
-	#disk_list=( "${arr_var[@]}" )
 }
 
+# add by wuyanjun 2016-6-17
+create_rootfs_in_disk()
+{
+    target_system_type=$1
+    rootfs_start=$2
+	local -n distros_en_dic
+	local -n distros_en_size_dic
+
+    distros_en_dic="${3}"
+    distros_en_size_dic="${4}"
+    disk_list="${5}"
+	#echo "================================================="
+	#echo ${disk_list[@]}
+	#for key in $(echo ${!distros_en_dic[*]})
+	#do
+	#	echo "$key : ${distros_en_dic[$key]}"
+	#done
+	#for key in $(echo ${!distros_en_size_dic[*]})
+	#do
+	#	echo "$key : ${distros_en_size_dic[$key]}"
+	#done
+	#echo $target_system_type
+	#echo $rootfs_start
+	#echo "================================================="
+    for distro_name in ${!distros_en_dic[*]}
+    do
+        distro=${distro_name}
+        distro_size=${distros_en_size_dic[${distro}]}
+        if [ "${distros_en_dic[$distro]}"x != "yes"x ]; then
+            continue
+        fi
+        distro_size_int=${distro_size%G*}
+        rootfs_end=$(( rootfs_start + distro_size_int ))
+        cmd_str="sudo parted /dev/${disk_list[0]} mkpart $distro ${rootfs_start}G ${rootfs_end}G"
+        echo -n "make root partition by "$cmd_str
+        eval $cmd_str
+        [ $? ] || { echo " ERR"; exit; }
+
+        #get the device id that match with the partition just made
+        read -a cur_idx <<< $(sudo parted /dev/${disk_list[0]} print | \
+        grep "$distro" | awk '{print $1}' | sort)
+        echo "root cur_idx is ${cur_idx[*]}"
+        NEWRT_IDX=${cur_idx[0]}
+
+        rootfs_start=$rootfs_end
+
+        #we always re-format the root partition
+        #echo yes | mkfs -t ext3 /dev/${disk_list[0]}$NEWRT_IDX
+        sudo mkdir $PWD/rootfs
+        sudo mount -t ext3 /dev/${disk_list[0]}$NEWRT_IDX rootfs
+
+        sudo rm -rf rootfs/*
+        distr_pre=""
+        case $distro in 
+            "ubuntu" | "fedora" | "debian" )
+                distro_pre=$(echo $distro | sed 's/\(.*\)/\u\1/g')
+                ;;
+            "centos" )
+                distro_pre="CentOS"
+                ;;
+            "opensuse" )
+                distro_pre="OpenSuse"
+                ;;
+        esac
+        tar -xzf /sys_setup/distro/$build_PLATFORM/${distro}$TARGET_ARCH/${distro_pre}_"$TARGET_ARCH".tar.gz -C rootfs/
+        sudo umount rootfs
+        sudo rm -fr rootfs
+        case $target_system_type in 
+            "ubuntu" | "opensuse" | "fedora" | "centos" | "debian" )
+                rootfs_dev=/dev/${disk_list[0]}$NEWRT_IDX
+                rootfs_partuuid=`ls -al /dev/disk/by-partuuid/ | grep "${rootfs_dev##*/}" | awk {'print $9'}`
+                ;;
+        esac
+    done
+}
+
+# add by wuyanjun 2016-6-17
+create_grub_file()
+{
+echo $@
+    dir_name=$1
+    target_system_type=$2
+    boot_uuid=$3
+    rootfs_partuuid=$4
+
+    if [ "`cat /proc/device-tree/model | grep 'D02'`"x != ""x ]; then
+        platform="D02"
+        image="Image_D02"
+        dtb="hip05-d02.dtb"
+        cmdline="linux /$image rdinit=/init root=PARTUUID=$rootfs_partuuid rootwait rootfstype=ext4 rw console=ttyS0,115200 earlycon=uart8250,mmio32,0x80300000 ip=dhcp"
+        device_tree_cmd="devicetree /$dtb"
+    elif [ "`cat /proc/cmdline`"x ]; then
+        platform="D03"
+        image="Image_D03"
+        dtb="hip06-d03.dtb"
+        cmdline="linux /$image rdinit=/init root=PARTUUID=$rootfs_partuuid rootwait rootfstype=ext4 rw console=ttyS1,115200 earlycon=hisilpcuart,mmio,0xa01b0000,0,0x2f8 ip=dhcp"
+	device_tree_cmd="devicetree /$dtb"
+    else
+	echo -1	
+    fi
+
+cat > ${dir_name}/grub.cfg << EOM
+#
+# Sample GRUB configuration file
+#
+
+# Boot automatically after 0 secs.
+set timeout=5
+
+# By default, boot the Euler/Linux
+set default=${target_system_type}_sata
+
+# For booting GNU/Linux
+menuentry "$target_system_type SATA" --id ${target_system_type}_sata {
+    search --no-floppy --fs-uuid --set=root ${boot_uuid}
+	$cmdline
+	devicetree /$dtb
+}
+EOM
+}

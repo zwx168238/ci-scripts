@@ -114,10 +114,7 @@ def write_summary_for_app(result_dir):
                         with open(summary_name, 'ab') as fd:
                             with open(os.path.join(root1, filename), 'rb') as rfd:
                                 lines = rfd.readlines()
-                                for i in range(0, len(lines)):
-                                    if re.search('FAIL', lines[i]):
-                                        fd.write("Test category: " + filename + '\n')
-                                        break
+                                fd.write("Test category: " + filename + '\n')
                                 for i in range(0, len(lines)):
                                     try:
                                         if re.match(total_str, lines[i]):
@@ -263,11 +260,15 @@ def print_dic(dic_app, wfp):
             total_suc = 0
             wfp.write(distro + '\t')
             for test_classify in total_test_case:
-                fail_num = v[distro][test_classify]['fail']
-                suc_num = v[distro][test_classify]['suc']
-                total_fail += fail_num
-                total_suc += suc_num
-                wfp.write('F:' + str(fail_num) + ' P:' + str(suc_num) + '\t')
+                try:
+                    fail_num = v[distro][test_classify]['fail']
+                    suc_num = v[distro][test_classify]['suc']
+                    total_fail += fail_num
+                    total_suc += suc_num
+                    wfp.write('F:' + str(fail_num) + ' P:' + str(suc_num) + '\t')
+                except Exception:
+                    wfp.write('F: 0 P: 0\t')
+                    continue
             wfp.write('F:' + str(total_fail) + ' P:' + str(total_suc) + '\n')
     # end of the print
 

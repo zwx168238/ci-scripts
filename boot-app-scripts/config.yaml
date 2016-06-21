@@ -5,6 +5,7 @@ Build:
 
     Platform:
         - D02
+        - D03
 DISTRO:
     D02:
         - Ubuntu: Ubuntu_ARM64.tar.gz
@@ -12,14 +13,18 @@ DISTRO:
         - OpenSuse: OpenSuse_ARM64.tar.gz
         - Debian: Debian_ARM64.tar.gz
         - CentOS: CentOS_ARM64.tar.gz
-    D01:
-        - Ubuntu: Ubuntu_ARM32.tar.gz
+    D03:
+        - Ubuntu: Ubuntu_ARM64.tar.gz
+        - Fedora: Fedora_ARM64.tar.gz
+        - OpenSuse: OpenSuse_ARM64.tar.gz
+        - Debian: Debian_ARM64.tar.gz
+        - CentOS: CentOS_ARM64.tar.gz
+
 
 # the dictionary for the board and arch mapping
 Arch:
     d03: arm64
     d02: arm64
-    d01: arm32
 
 # for lava connection 
 LAVA:

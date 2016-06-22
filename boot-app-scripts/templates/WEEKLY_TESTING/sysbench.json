@@ -13,7 +13,7 @@
                 "test.plan": "{test_plan}"
             },
             "parameters": {
-                "target_type": "ubuntu"
+                "target_type": "{nfs_distro}"
             }  
         },
         {
@@ -21,8 +21,8 @@
             "parameters": {
                 "testdef_repos": [
                     {
-                        "git-repo": "git://github.com/wuyuer/lava-test-cases.git",
-                        "testdef": "ubuntu/sysbench.yaml"
+                        "git-repo": "https://github.com/open-estuary/ci-test-cases.git",
+                        "testdef": "common/sysbench.yaml"
                     }
                 ],
                 "timeout": 172800

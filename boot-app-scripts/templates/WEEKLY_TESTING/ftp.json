@@ -1,6 +1,6 @@
 {
     "actions": [
-        {   
+        {
             "command": "dummy_deploy",
             "metadata": {
                 "image.type": "{image_type}",
@@ -14,21 +14,20 @@
             },
             "parameters": {
                 "target_type": "{nfs_distro}"
-            }  
+            }
         },
         {
             "command": "lava_test_shell",
             "parameters": {
-                "testdef_repos": [
-                    {
-                        "git-repo": "https://github.com/open-estuary/ci-test-cases.git",
-                        "testdef": "common/device_read_perf.yaml"
-                    }
-                ],
-                "timeout": 172800
+            "testdef_repos": [
+                {
+                    "git-repo": "https://github.com/open-estuary/ci-test-cases.git",
+                    "testdef": "distro/{nfs_distro}/{nfs_distro}_ftp.yaml"
+                }
+            ],
+            "timeout": 172800
             }
         },
-        
         {
             "command": "submit_results",
             "parameters": {

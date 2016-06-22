@@ -13,7 +13,7 @@
                 "test.plan": "{test_plan}"
             },
             "parameters": {
-                "target_type": "ubuntu"
+                "target_type": "{nfs_distro}"
             }
         },
         {
@@ -21,14 +21,13 @@
             "parameters": {
                 "testdef_repos": [
                     {
-                        "git-repo": "https://github.com/wuyuer/lava-test-cases.git",
+                        "git-repo": "https://github.com/open-estuary/ci-test-cases.git",
                         "testdef": "common/cyclictest-basic.yaml"
                     }
                 ],
                 "timeout": 172800
             }
         },
-
         {
             "command": "submit_results",
             "parameters": {

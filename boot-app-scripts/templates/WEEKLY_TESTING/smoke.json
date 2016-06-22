@@ -22,13 +22,12 @@
                 "testdef_repos": [
                     {
                         "git-repo": "https://github.com/open-estuary/ci-test-cases.git",
-                        "testdef": "common/device_read_perf.yaml"
+                        "testdef": "common/smoke.yaml"
                     }
                 ],
                 "timeout": 172800
             }
         },
-        
         {
             "command": "submit_results",
             "parameters": {

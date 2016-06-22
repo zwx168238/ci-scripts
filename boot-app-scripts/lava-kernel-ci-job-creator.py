@@ -285,7 +285,7 @@ def fill_nfs_url(job_json, distro_list, device_type):
     select_distro = [ x for x in distro_list if x.split('/')[-1] in arch_distro[device_type]]
     for distro in distro_list:
         rootfs = re.findall("(.*?).tar.gz", distro.split('/')[-1])
-        rootfs_name = rootfs[0]
+        rootfs_name = rootfs[0].lower()
         modified_file = job_json.split('.json')[0] + '-' + rootfs_name + '.json'
         with open(modified_file, 'wt') as fout:
             with open(job_json, "rt") as fin:

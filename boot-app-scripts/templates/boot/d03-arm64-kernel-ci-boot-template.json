@@ -7,20 +7,30 @@
                 "image.url": "{image_url}",
                 "kernel.tree": "{tree}",
                 "kernel.version": "{kernel_version}",
-                "device.tree": "{device_tree}",
                 "kernel.endian": "{endian}",
                 "kernel.defconfig": "{defconfig}",
                 "platform.fastboot": "{fastboot}",
+                "bootloadertype": "uefi",
                 "test.plan": "{test_plan}"
             },
             "parameters": {
                 "dtb": "{dtb_url}",
                 "kernel": "{kernel_url}",
-                "ramdisk": "http://storage.kernelci.org/images/rootfs/buildroot/arm64/rootfs.cpio.gz"
+                "bootloadertype": "uefi",
+                "target_type": "ubuntu"					
             }
         },
         {
             "command": "boot_linaro_image"
+        },
+        {
+            "command": "lava_command_run",
+            "parameters": {
+                "commands": [
+                    "cd /sys_setup/bin",
+                    "sudo ./sys_setup.sh -d {distro_name}"
+                ]
+            }
         },
         {
             "command": "submit_results",
@@ -31,8 +41,9 @@
         }
     ],
     "device_type": "{device_type}",
+    "description": "deploy {distro_name} to sata",
     "job_name": "{job_name}",
     "logging_level": "DEBUG",
-    "priority": "{priority}",
-    "timeout": 18000
+    "priority": "high",
+    "timeout": 172800
 }

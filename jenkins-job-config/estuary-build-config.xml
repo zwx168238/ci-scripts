@@ -31,9 +31,9 @@
           <defaultValue>Ubuntu OpenSuse Fedora Debian CentOS</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
-          <name>VERSION</name>
+          <name>ARCH_MAP</name>
           <description></description>
-          <defaultValue></defaultValue>
+          <defaultValue>d03 arm64 d02 arm64</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>BOOT_PLAN</name>
@@ -53,12 +53,12 @@
         <hudson.model.StringParameterDefinition>
           <name>HOST</name>
           <description></description>
-          <defaultValue>114.119.4.74</defaultValue>
+          <defaultValue>192.168.3.100</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>LAVA_SERVER</name>
           <description></description>
-          <defaultValue>http://114.119.4.74:800/RPC2</defaultValue>
+          <defaultValue>http://192.168.3.100/RPC2</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>LAVA_USER</name>
@@ -76,24 +76,24 @@
           <defaultValue>g43y0wtyi0m2ua7in3xtfch1m2s1dd0k97ac1fqqhqd0qblimtehqkwk8mjimsyh0jczrnaibdlb23mtn17qca6i14tcl27h7md580za5p8w81fl035b6bk1ybw26lle</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
-          <name>KERNELCI_TOKEN</name>
+          <name>KERNELCI_SERVER</name>
+          <description></description>
+          <defaultValue>http://192.168.3.100:8888</defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name> KERNELCI_TOKEN</name>
           <description></description>
           <defaultValue>3eda8013-da37-42ea-b9a0-7a66badd1b68</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
-          <name>KERNELCI_SERVER</name>
-          <description></description>
-          <defaultValue>http://114.119.4.74:8888/</defaultValue>
-        </hudson.model.StringParameterDefinition>
-        <hudson.model.StringParameterDefinition>
           <name>FTP_SERVER</name>
           <description></description>
-          <defaultValue>http://114.119.4.74:808</defaultValue>
+          <defaultValue>http://192.168.3.100:8083</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
-          <name>ARCH_MAP</name>
+          <name>FTP_DIR</name>
           <description></description>
-          <defaultValue>d03 arm64 d02 arm64</defaultValue>
+          <defaultValue>/var/www/images/kernel-ci</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>TFTP_DIR</name>
@@ -101,9 +101,9 @@
           <defaultValue>/var/lib/tftpboot</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
-          <name>FTP_DIR</name>
+          <name>VERSION</name>
           <description></description>
-          <defaultValue>/var/www/images/kernel-ci</defaultValue>
+          <defaultValue></defaultValue>
         </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
@@ -251,8 +251,8 @@ function build_image_for_sata()
 
 	make defconfig
     make -j $CPU_NUM
-    cp ./arch/arm64/boot/Image  ../${image_dir}
-    cp ./arch/arm64/boot/dts/hisilicon/hip05-d02.dtb  ../${image_dir}
+    cp ./arch/arm64/boot/Image  ../${image_dir}/Image-sata
+    cp ./arch/arm64/boot/dts/hisilicon/hip05-d02.dtb  ../${image_dir}/hip05-d02-sata.dtb
 
     make clean
     rm -fr ${dts_file} &amp;&amp; mv ${dts_file}_bk ${dts_file}

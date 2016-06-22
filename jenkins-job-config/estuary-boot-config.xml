@@ -23,7 +23,7 @@
         <hudson.model.StringParameterDefinition>
           <name>GIT_DESCRIBE</name>
           <description></description>
-          <defaultValue>v2.2-rc0</defaultValue>
+          <defaultValue></defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>SHELL_PLATFORM</name>
@@ -34,6 +34,11 @@
           <name>SHELL_DISTRO</name>
           <description></description>
           <defaultValue>Ubuntu OpenSuse Fedora Debian CentOS</defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>ARCH_MAP</name>
+          <description></description>
+          <defaultValue>d03 arm64 d02 arm64</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>BOOT_PLAN</name>
@@ -53,12 +58,12 @@
         <hudson.model.StringParameterDefinition>
           <name>HOST</name>
           <description></description>
-          <defaultValue>114.119.4.74/</defaultValue>
+          <defaultValue>192.168.3.100</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>LAVA_SERVER</name>
           <description></description>
-          <defaultValue>http://114.119.4.74:800/RPC2</defaultValue>
+          <defaultValue>http://192.168.3.100/RPC2</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>LAVA_USER</name>
@@ -78,12 +83,17 @@
         <hudson.model.StringParameterDefinition>
           <name>FTP_SERVER</name>
           <description></description>
-          <defaultValue>http://114.119.4.74:808</defaultValue>
+          <defaultValue>http://192.168.3.100:8083</defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>FTP_DIR</name>
+          <description></description>
+          <defaultValue>/var/www/images/kernel-ci</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>KERNELCI_SERVER</name>
           <description></description>
-          <defaultValue>http://114.119.4.74:8888/</defaultValue>
+          <defaultValue>http://192.168.3.100:8888</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>KERNELCI_TOKEN</name>
@@ -91,19 +101,9 @@
           <defaultValue>3eda8013-da37-42ea-b9a0-7a66badd1b68</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
-          <name>ARCH_MAP</name>
-          <description></description>
-          <defaultValue>d03 arm64 d02 arm64</defaultValue>
-        </hudson.model.StringParameterDefinition>
-        <hudson.model.StringParameterDefinition>
           <name>TFTP_DIR</name>
           <description></description>
           <defaultValue>/var/lib/tftpboot</defaultValue>
-        </hudson.model.StringParameterDefinition>
-        <hudson.model.StringParameterDefinition>
-          <name>FTP_DIR</name>
-          <description></description>
-          <defaultValue>/var/www/images/kernel-ci</defaultValue>
         </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
@@ -241,20 +241,63 @@ print_time &quot;the begin time of boot test is &quot;
 
 ##### copy some files to the lava-server machine to support the boot process #####
 set -e
+USING_LOCAL_SERVER=1
+
+CI_SCRIPTS_DIR=${WORKSPACE}/local/ci-scripts
+pushd ${CI_SCRIPTS_DIR}/boot-app-scripts    # change current work directory
 
 echo $TFTP_DIR
-scp download_all_file.py download_distros.sh $USER@$HOST:$TFTP_DIR
+if (( USING_LOCAL_SERVER )); then
+	cp download_all_file.py download_distros.sh $TFTP_DIR
+else
+	scp download_all_file.py download_distros.sh $USER@$HOST:$TFTP_DIR
+fi
+
 if [ $? -ne 0 ]; then
 	echo &apos;Upload download tools failed&apos;
     exit -1
 fi
 
-ssh $USER@$HOST &quot;cd $TFTP_DIR; test -d download &amp;&amp; rm -fr download; mkdir download;&quot;
-ssh $USER@$HOST &quot;cd $TFTP_DIR/download; python ../download_all_file.py -u $FTP_SERVER -t $KERNELCI_TOKEN -d $GIT_DESCRIBE -j $TREE_NAME;&quot;
-ssh $USER@$HOST &quot;cd $TFTP_DIR/download; cp -rf *dtb sata_image ~/;  rm -fr download_all_file.py; &quot;
+if (( USING_LOCAL_SERVER )); then
+    (
+    cd $TFTP_DIR
+    test -d download &amp;&amp; rm -fr download
+    mkdir download
+    
+	cd $TFTP_DIR/download
+    python ../download_all_file.py -u $FTP_SERVER -t $KERNELCI_TOKEN -d $GIT_DESCRIBE -j $TREE_NAME
+    
+    test -d sata_image &amp;&amp; rm -fr sata_image
+    mkdir sata_image
+    
+    for file in *; do
+    	if [ x&quot;$(expr match &quot;$file&quot; &apos;.*\(-sata\).*&apos;)&quot; != x&quot;&quot; ]; then
+        	mv $file ./sata_image/${file/-sata/}
+        fi
+    done
+    
+	sudo cp -rf *dtb sata_image /home/$USER
+    rm -fr download_all_file.py
+    )
+else
+	ssh $USER@$HOST &quot;cd $TFTP_DIR; test -d download &amp;&amp; rm -fr download; mkdir download;&quot;
+	ssh $USER@$HOST &quot;cd $TFTP_DIR/download; python ../download_all_file.py -u $FTP_SERVER -t $KERNELCI_TOKEN -d $GIT_DESCRIBE -j $TREE_NAME;&quot;
+	ssh $USER@$HOST &quot;cd $TFTP_DIR/download; cp -rf *dtb sata_image ~/;  rm -fr download_all_file.py; &quot;
+fi
 
 BOOT_LOC=/targetNFS/ubuntu_for_deployment/sys_setup/bin
-ssh jenkins@$HOST &quot;cd $TFTP_DIR/download; sudo cp -f *.dtb *Image* $BOOT_LOC;&quot;
+BOOT_DIR=/targetNFS/ubuntu_for_deployment/sys_setup/boot
+
+if (( USING_LOCAL_SERVER )); then
+    (
+    cd $TFTP_DIR/download
+    sudo cp -f *.dtb *Image* $BOOT_LOC
+    sudo cp -f *.dtb *Image* $BOOT_DIR
+    )
+else
+	ssh jenkins@$HOST &quot;cd $TFTP_DIR/download; sudo cp -f *.dtb *Image* $BOOT_LOC; sudo cp -f *.dtb *Image $BOOT_DIR&quot;
+fi
+
 if [ $? -ne 0 ]; then
 	echo &apos;Can not login the tftp server&apos;
     exit -1
@@ -278,15 +321,19 @@ do
     do
     	board_arch=${dict[$PLAT]}
         URL_NAME=$FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}
-		ssh jenkins@$HOST &quot;cd $TFTP_DIR; sudo ./download_distros.sh $DISTRO $URL_NAME ${board_arch} $PLAT&quot;
+        if (( USING_LOCAL_SERVER )); then
+            (
+            cd $TFTP_DIR
+            sudo ./download_distros.sh $DISTRO $URL_NAME ${board_arch} $PLAT
+            )
+        else
+			ssh jenkins@$HOST &quot;cd $TFTP_DIR; sudo ./download_distros.sh $DISTRO $URL_NAME ${board_arch} $PLAT&quot;
+        fi
     done
 done
 
 set +e
 ##### Finish copying files to the lava-server machine #####
-
-CI_SCRIPTS_DIR=${WORKSPACE}/local/ci-scripts
-pushd ${CI_SCRIPTS_DIR}/boot-app-scripts    # change current work directory
 
 rm -fr jobs*
 rm -fr results*
@@ -319,7 +366,7 @@ do
         [ $? -ne 0 ] &amp;&amp; python parser.py -d $DISTRO &amp;&amp; mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue
 	fi 
     
-	print_time &quot;the end time of deploy $DSITRO in PXE is &quot;
+	print_time &quot;the end time of deploy $DISTRO in PXE is &quot;
     
 	#########################################
 	##### Entering the sata disk rootfs #####
@@ -339,16 +386,24 @@ do
 	run_and_move_result $BOOT_FOR_TEST $DISTRO
     [ $? -ne 0 ] &amp;&amp; python parser.py -d $DISTRO &amp;&amp; mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue 
     
-    print_time &quot;the end time of boot $DSITRO fromhard disk is &quot;
+    print_time &quot;the end time of boot $DISTRO fromhard disk is &quot;
 	##### End of entering the sata disk #####
 	#########################################
     
 	#####  modify the ip address according to the boot information
     DEVCCE_IP=&apos;device_ip_type.txt&apos;
-	ssh $HOST -l $USER  &quot;cd /etc/lava-dispatcher/devices; rm -fr $DEVCCE_IP&quot;
-	scp $DISTRO/results_${BOOT_FOR_TEST}/${LAVA_USER}/${DEVCCE_IP} $USER@$HOST:/etc/lava-dispatcher/devices
-	scp modify_conf_file.sh  $USER@$HOST:/etc/lava-dispatcher/devices
-	ssh $HOST -l $USER  &quot;cd /etc/lava-dispatcher/devices; ./modify_conf_file.sh&quot;
+    if (( USING_LOCAL_SERVER )); then
+        rm -fr /etc/lava-dispatcher/devices/$DEVCCE_IP
+        cp $DISTRO/results_${BOOT_FOR_TEST}/${LAVA_USER}/${DEVCCE_IP} /etc/lava-dispatcher/devices
+        cp modify_conf_file.sh /etc/lava-dispatcher/devices
+        /etc/lava-dispatcher/devices/modify_conf_file.sh
+    else
+		ssh $HOST -l $USER  &quot;cd /etc/lava-dispatcher/devices; rm -fr $DEVCCE_IP&quot;
+		scp $DISTRO/results_${BOOT_FOR_TEST}/${LAVA_USER}/${DEVCCE_IP} $USER@$HOST:/etc/lava-dispatcher/devices
+		scp modify_conf_file.sh  $USER@$HOST:/etc/lava-dispatcher/devices
+		ssh $HOST -l $USER  &quot;cd /etc/lava-dispatcher/devices; ./modify_conf_file.sh&quot;
+    fi
+    
     if [ $? -ne 0 ]; then
     	echo &quot;create ip and host mapping error! Aborting&quot;
        	python parser.py  -d $DISTRO  &amp;&amp;  mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue 

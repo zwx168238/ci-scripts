@@ -286,9 +286,25 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority,
                             # to support filling all the nfsroot url in the json template
                             with open(job_json, 'rb') as temp:
                                 whole_lines = temp.read()
-                            if re.findall('nfs_url', whole_lines) or re.findall('nfs_distro', whole_lines):
+                            if re.findall('nfs_url', whole_lines):
                                 if len(distro_list):
                                     fill_nfs_url(job_json, distro_list, device_type)
+                            else:
+                                if re.findall('nfs_distro', whole_lines):
+                                    rootfs_name = distro.lower()
+                                    modified_file = job_json.split('.json')[0] + '-' + rootfs_name + '.json'
+                                    with open(modified_file, 'wt') as fout:
+                                        with open(job_json, "rt") as fin:
+                                            for line in fin:
+                                                tmp = line
+                                                if re.search('{nfs_url}', tmp):
+                                                    tmp = line.replace('{nfs_url}', distro)
+                                                if re.search('{nfs_distro}', tmp):
+                                                    tmp = line.replace('{nfs_distro}', rootfs_name)
+                                                fout.write(tmp)
+                                    if os.path.exists(job_json):
+                                        os.remove(job_json)
+
                             # add by wuyanjun 2016/5/12
                             # to support showing the distro name in the process of the SAS boot
                             if sasFlag:

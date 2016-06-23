@@ -9,15 +9,12 @@ import argparse
 import ConfigParser
 
 from lib import configuration
+import parameter_parser
 
 base_url = None
 kernel = None
 platform_list = []
 legacy_platform_list = []
-
-arch_distro = {'d01': ['Ubuntu_ARM32.tar.gz'],
-               'd02': ['Fedora_ARM64.tar.gz', 'Ubuntu_ARM64.tar.gz',
-                   'Debian_ARM64.tar.gz', 'OpenSuse_ARM64.tar.gz', 'CentOS_ARM64.tar.gz']}
 
 hisi_x5hd2_dkb = {'device_type': 'hi3716cv200',
                   'templates': ['generic-arm-dtb-kernel-ci-boot-template.json',
@@ -229,7 +226,8 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority,
                     else:
                         # may be need to improve here because of all test cases will be executed
                         total_templates = [x for x in device_templates] 
-
+                    # may need to change
+                    get_nfs_url(distro_url, device_type)
                     for template in total_templates:
                         job_name = tree + '-' + kernel_version + '-' + defconfig[:100] + \
                                 '-' + platform_name + '-' + device_type + '-' + plan
@@ -288,8 +286,7 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority,
                             # to support filling all the nfsroot url in the json template
                             with open(job_json, 'rb') as temp:
                                 whole_lines = temp.read()
-                            if re.findall('nfs_url', whole_lines):
-                                get_nfs_url(distro_url, device_type)
+                            if re.findall('nfs_url', whole_lines) or re.findall('nfs_distro', whole_lines):
                                 if len(distro_list):
                                     fill_nfs_url(job_json, distro_list, device_type)
                             # add by wuyanjun 2016/5/12
@@ -302,10 +299,9 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority,
 
 # to fill the {nfs_url} instead of ${rootnfs_address_url}
 def fill_nfs_url(job_json, distro_list, device_type):
-    select_distro = [ x for x in distro_list if x.split('/')[-1] in arch_distro[device_type]]
     for distro in distro_list:
         rootfs = re.findall("(.*?).tar.gz", distro.split('/')[-1])
-        rootfs_name = rootfs[0].lower()
+        rootfs_name = rootfs[0].split('_')[0].lower()
         modified_file = job_json.split('.json')[0] + '-' + rootfs_name + '.json'
         with open(modified_file, 'wt') as fout:
             with open(job_json, "rt") as fin:

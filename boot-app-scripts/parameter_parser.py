@@ -47,7 +47,8 @@ if __name__ == "__main__":
             value = read_value_of_section(args.filename, args.section)
             if type(value)==dict:
                 for val in value.keys():
-                    print val + " " + value[val]
+                    print val
+                    print value[val]
             else:
                 print value
         if args.key and not args.value:

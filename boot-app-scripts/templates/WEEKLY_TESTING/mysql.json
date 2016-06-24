@@ -17,7 +17,6 @@
             }
         },
         {
-        {
             "command": "lava_test_shell",
             "parameters": {
             "testdef_repos": [

@@ -22,7 +22,7 @@
                 "testdef_repos": [
                     {
                         "git-repo": "https://github.com/open-estuary/ci-test-cases.git",
-                        "testdef": "distro/{nfs_distro}/{nfs_distro}-smoke.yaml"
+                        "testdef": "distro/{nfs_distro}/{nfs_distro}_smoke.yaml"
                     }
                 ],
                 "timeout": 172800

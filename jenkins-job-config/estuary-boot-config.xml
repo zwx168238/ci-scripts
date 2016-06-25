@@ -108,7 +108,7 @@
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <scm class="hudson.plugins.git.GitSCM" plugin="git@2.4.4">
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@2.5.0">
     <configVersion>2</configVersion>
     <userRemoteConfigs>
       <hudson.plugins.git.UserRemoteConfig>
@@ -160,9 +160,9 @@ function generate_jobs()
 	do
     	board_arch=${dict[$PLAT]}
         if [ x&quot;$distro&quot; != x&quot;&quot; ]; then
-    		python lava-kernel-ci-job-creator.py $FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}/ --plans $test_name --distro $distro $harddisk_flag
+    		python estuary-ci-job-creator.py $FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}/ --plans $test_name --distro $distro $harddisk_flag
         else 
-        	python lava-kernel-ci-job-creator.py $FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}/ --plans $test_name 
+        	python estuary-ci-job-creator.py $FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}/ --plans $test_name 
         fi
    		if [ $? -ne 0 ]; then
     		echo &quot;create the boot jobs error! Aborting&quot;
@@ -174,7 +174,7 @@ function generate_jobs()
 function run_and_report_jobs()
 {
 	cd jobs
-	python ../lava-job-runner.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM --poll POLL
+	python ../estuary-job-runner.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM --poll POLL
 	cd ..
 
 	if [ ! -f jobs/results/POLL ]; then
@@ -182,7 +182,7 @@ function run_and_report_jobs()
     	return -1
 	fi
 
-	python lava-report.py --boot jobs/results/POLL --lab $LAVA_USER --api $KERNELCI_SERVER --token $KERNELCI_TOKEN
+	python estuary-report.py --boot jobs/results/POLL --lab $LAVA_USER --api $KERNELCI_SERVER --token $KERNELCI_TOKEN
 
 	if [ ! -d results ]; then
 		echo &quot;running the boot jobs error! Aborting&quot; 
@@ -419,7 +419,13 @@ do
 	done
     
 	if [ -d jobs ]; then
-		run_and_move_result app $DISTRO
+        run_and_report_jobs
+	    test -d results  &amp;&amp; mv results results_app
+	    test -d jobs  &amp;&amp; mv jobs jobs_app
+        [ ! -d $DISTRO ]&amp;&amp; mkdir -p $DISTRO
+        test -d jobs_$DISTRO &amp;&amp; mv jobs_app jobs_$DISTRO
+	    test -d results_$DISTRO &amp;&amp; mv results_app results_$DISTRO
+        
 		[ $? -ne 0 ] &amp;&amp; python parser.py -d $DISTRO &amp;&amp; mv $DISTRO $GIT_DESCRIBE/results &amp;&amp; continue 
 	fi
     
@@ -434,7 +440,7 @@ DES_TMP=boot_results
 [ -d $DES_TMP ] &amp;&amp; rm -fr $DES_TMP
 mkdir $DES_TMP
 
-# generate the application jobs for the board_types 
+# generate the boot jobs for the board_types 
 for app_plan in $APP_PLAN
 do
     [[ $app_plan =~ &quot;BOOT&quot; ]] &amp;&amp; generate_jobs $app_plan
@@ -481,6 +487,6 @@ popd    # restore current work directory
     </hudson.tasks.Mailer>
   </publishers>
   <buildWrappers>
-    <hudson.plugins.timestamper.TimestamperBuildWrapper plugin="timestamper@1.8.2"/>
+    <hudson.plugins.timestamper.TimestamperBuildWrapper plugin="timestamper@1.8.3"/>
   </buildWrappers>
 </project>

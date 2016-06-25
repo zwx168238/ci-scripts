@@ -1,0 +1,262 @@
+- job:
+    name: khilman-trigger-flex
+    project-type: matrix
+    defaults: global
+    logrotate:
+        daysToKeep: 10
+        numToKeep: 50
+    properties:
+        - authorization:
+            anonymous:
+                - job-read
+                - job-extended-read
+        - throttle:
+            max-total: 1
+            option: project
+        - inject
+    disabled: false
+    child-workspace: .
+    display-name: 'khilman - Trigger flex'
+    triggers:
+        - timed: 'H/60 * * * *'
+    axes:
+        - axis:
+            type: user-defined
+            name: ARCH
+            values:
+                - arm64
+                - x86
+        - axis:
+            type: user-defined
+            name: TREE_BRANCH
+            values:
+                    - plinth#devm-
+                    - plinth#topic-hns-
+                    - plinth#topic-pcie-
+                    - plinth#topic-sas-
+                    - plinth#topic-roce-
+                    - plinth#topic-edac-
+    execution-strategy:
+        sequential: true
+    wrappers:
+        - timestamps
+        - timeout:
+            timeout: 30
+    builders:
+        - shell: |
+            #!/bin/bash
+
+            set -x
+
+            REFERENCE=/srv/mirrors/linux.git
+
+            declare -A trees
+            trees=(
+            [plinth]="git@github.com:hisilicon/kernel-dev.git"
+            )
+
+            OFS=${IFS}
+            IFS='#'
+            arr=($TREE_BRANCH)
+            IFS=${OFS}
+
+            tree_name=${arr[0]}
+            tree_url=${trees[$tree_name]}
+            branch_prefix=${arr[1]}
+            if [[ -z ${branch_prefix} ]]; then
+              branch="master"
+            fi
+
+            if [ ! -e $tree_name ]; then
+              git clone --reference $REFERENCE $tree_url $tree_name
+            else
+              (cd $tree_name; git remote update)
+            fi
+
+            rm -f *.properties
+            cd $tree_name
+            rm -f *.properties
+            git remote update
+
+            branch=$(git for-each-ref --sort=-committerdate refs/remotes/origin | grep ${branch_prefix} | head -n 1 | sed "s/.*${branch_prefix}/${branch_prefix}/")
+            git checkout -f origin/$branch
+            if [ $? != 0 ]; then
+              echo "ERROR: branch $branch doesn't exist"
+              exit 1
+            fi
+
+            GIT_DESCRIBE=$(git describe)
+            COMMIT_ID=$(git log -n1 --format=%H)
+
+            echo "${tree_name}/${branch}-${GIT_DESCRIBE}"
+
+            THIS_COMMIT=$branch-this.commit
+            LAST_COMMIT=$branch-last.commit
+            if [ ${ARCH} != "arm" ]; then
+              THIS_COMMIT=$ARCH-$branch-this.commit
+              LAST_COMMIT=$ARCH-$branch-last.commit
+            fi
+
+            if [ ! -e $LAST_COMMIT ]; then
+              echo 0 > $LAST_COMMIT
+            fi
+
+            git log -n1 --format=%H > $THIS_COMMIT
+            diff $LAST_COMMIT $THIS_COMMIT
+            if [ $? == 0 ]; then
+              echo "Nothing new in $tree_name/$branch.  Skipping"
+              exit 0
+            fi
+            cp $THIS_COMMIT $LAST_COMMIT
+
+            ARCH_LIST=${ARCH}
+
+            # defconfigs
+            DEFCONFIG_LIST="allnoconfig "
+            DEFCONFIG_LIST+=`(cd arch/${ARCH}/configs; echo *defconfig)`
+            DEFCONFIG_LIST+=" "
+
+            base_defconfig="defconfig"
+            if [ ${ARCH} = "arm" ]; then
+              base_defconfig="multi_v7_defconfig"
+            fi
+
+            # tinyconfig
+            if [ -e kernel/configs/tiny.config ]; then
+              DEFCONFIG_LIST+="tinyconfig "
+            fi
+
+            # defconfigs + fragments
+            if [ ${ARCH} = "arm" ]; then
+              DEFCONFIG_LIST+="allmodconfig "
+              DEFCONFIG_LIST+="multi_v7_defconfig+CONFIG_ARM_LPAE=y "
+              DEFCONFIG_LIST+="multi_v7_defconfig+CONFIG_CPU_BIG_ENDIAN=y "
+              DEFCONFIG_LIST+="multi_v7_defconfig+CONFIG_PROVE_LOCKING=y "
+              DEFCONFIG_LIST+="versatile_defconfig+CONFIG_OF_UNITTEST=y "
+              DEFCONFIG_LIST+="multi_v7_defconfig+CONFIG_THUMB2_KERNEL=y+CONFIG_ARM_MODULE_PLTS=y "
+              DEFCONFIG_LIST+="multi_v7_defconfig+CONFIG_SMP=n "
+              DEFCONFIG_LIST+="multi_v7_defconfig+CONFIG_EFI=y "
+              DEFCONFIG_LIST+="multi_v7_defconfig+CONFIG_EFI=y+CONFIG_ARM_LPAE=y "
+
+              # Platform specific
+              if [ -e arch/${ARCH}/configs/mvebu_v7_defconfig ]; then
+                DEFCONFIG_LIST+="mvebu_v7_defconfig+CONFIG_CPU_BIG_ENDIAN=y "
+              fi
+            fi
+
+            if [ ${ARCH} = "arm64" ]; then
+              DEFCONFIG_LIST+="defconfig+CONFIG_CPU_BIG_ENDIAN=y "
+              DEFCONFIG_LIST+="defconfig+CONFIG_OF_UNITTEST=y "
+              DEFCONFIG_LIST+="defconfig+CONFIG_RANDOMIZE_BASE=y "
+              # ACPI currently depends on EXPERT on arm64
+              DEFCONFIG_LIST+="defconfig+CONFIG_EXPERT=y+CONFIG_ACPI=y "
+              DEFCONFIG_LIST+="allmodconfig "
+            fi
+
+            if [ ${ARCH} = "x86" ]; then
+              DEFCONFIG_LIST+="defconfig+CONFIG_OF_UNITTEST=y "
+              DEFCONFIG_LIST+="allmodconfig "
+              DEFCONFIG_LIST+="allmodconfig+CONFIG_OF=n "
+              DEFCONFIG_LIST+="i386_defconfig "
+
+              # Fragments
+              FRAGS="arch/x86/configs/kvm_guest.config"
+              for frag in ${FRAGS}; do
+                if [ -e $frag ]; then
+                  DEFCONFIG_LIST+="defconfig+$frag "
+                fi
+              done
+            fi
+
+            # Tree specific fragments: LSK + KVM fragments
+            if [ ${tree_name} = "stable" ]; then
+              # Don't do allmodconfig builds
+              DEFCONFIG_LIST=${DEFCONFIG_LIST/allmodconfig/}
+            fi
+
+            # Temporary config, bridge for kvm testing
+            if [ ${tree_name} = "mainline" ] && [ ${ARCH} = "arm64" ]; then
+              if ! grep -q CONFIG_BRIDGE= arch/arm64/configs/defconfig; then
+                DEFCONFIG_LIST+="defconfig+CONFIG_BRIDGE=m "
+              fi
+            fi
+
+            # Security testing features
+            DEFCONFIG_LIST+="$base_defconfig+CONFIG_LKDTM=y "
+
+            # Tree specific fragments: LSK + KVM fragments
+            if [ ${tree_name} = "lsk" ] || [ ${tree_name} = "anders" ]; then
+              # Don't do allmodconfig builds
+              DEFCONFIG_LIST=${DEFCONFIG_LIST/allmodconfig/}
+
+              FRAGS="linaro/configs/kvm-guest.conf"
+
+              # For -rt kernels, build with RT fragment
+              RT_FRAG=kernel/configs/preempt-rt.config
+              if [ ! -f ${RT_FRAG} ]; then
+                RT_FRAG=linaro/configs/preempt-rt.conf
+              fi
+
+              grep -q "config PREEMPT_RT_FULL" kernel/Kconfig.preempt
+              if [ $? = 0 ]; then
+                 FRAGS+=" $RT_FRAG "
+              fi
+
+              for frag in ${FRAGS}; do
+                if [ -e $frag ]; then
+                  DEFCONFIG_LIST+="$base_defconfig+$frag "
+                fi
+              done
+
+              # KVM host: only enable for LPAE-enabled kernels
+              KVM_HOST_FRAG=linaro/configs/kvm-host.conf
+              if [ -e $KVM_HOST_FRAG ]; then
+                lpae_base="multi_v7_defconfig+CONFIG_ARM_LPAE=y"
+                if [[ $DEFCONFIG_LIST == *"${lpae_base}"* ]]; then
+                    DEFCONFIG_LIST+="${lpae_base}+$KVM_HOST_FRAG "
+                fi
+              fi
+
+              # Linaro base + distro frags
+              if [ -e linaro/configs/linaro-base.conf -a -e linaro/configs/distribution.conf ]; then
+                  DEFCONFIG_LIST+="$base_defconfig+linaro/configs/linaro-base.conf+linaro/configs/distribution.conf "
+              fi
+
+              # Android/AOSP fragments: combined together
+              if [ -e android/configs ]; then
+                FRAG_A=""
+                FRAGS="android/configs/android-base.cfg android/configs/android-recommended.cfg"
+                for frag in ${FRAGS}; do
+                  if [ -e $frag ]; then
+                    FRAG_A+="+$frag"
+                  fi
+                done
+                if [ -n "$FRAG_A" ]; then
+                  DEFCONFIG_LIST+=" $base_defconfig$FRAG_A "
+                  # Also build vexpress_defconfig + Android for testing on QEMU
+                  if [ ${ARCH} = "arm" ]; then
+                    DEFCONFIG_LIST+=" vexpress_defconfig$FRAG_A "
+                  fi
+                fi
+              fi
+            fi
+
+            cat << EOF > ${WORKSPACE}/${TREE_BRANCH}-build.properties
+            ARCH_LIST=$ARCH_LIST
+            DEFCONFIG_LIST=$DEFCONFIG_LIST
+
+            TREE=$tree_url
+            TREE_NAME=$tree_name
+            BRANCH=$branch
+            COMMIT_ID=$COMMIT_ID
+            PUBLISH=true
+            EOF
+
+            cat ${WORKSPACE}/${TREE_BRANCH}-build.properties
+        - trigger-builds:
+            - project: 'khilman-kbuilder'
+              property-file: ${TREE_BRANCH}-build.properties
+        - shell: |
+            #!/bin/bash
+
+            rm -f ${TREE_BRANCH}-build.properties

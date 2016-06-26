@@ -33,11 +33,11 @@ done
 # Check if all builds for all architectures have finished. The magic number here is 3 (arm, arm64, x86)
 # This magic number will need to be changed if new architectures are added.
 export BUILDS_FINISHED=$(ls /var/www/images/kernel-ci/$TREE_NAME/$GIT_DESCRIBE/ | grep .done | wc -l)
-if [[ BUILDS_FINISHED -eq 3 ]]; then
+if [[ BUILDS_FINISHED -eq 1 ]]; then
     echo "All builds have now finished, triggering testing..."
     # Tell the dashboard the job has finished build.
     echo "Build has now finished, reporting result to dashboard."
-    curl -X POST -H "Authorization: 08a92277-7867-4bde-9a3d-a003b4b9cbbe" -H "Content-Type: application/json" -d '{"job": "'$TREE_NAME'", "kernel": "'$GIT_DESCRIBE'"}' https://api.kernelci.org/job
+    curl -X POST -H "Authorization: db85d8fb-da63-4d77-950e-3dffcd8ce115" -H "Content-Type: application/json" -d '{"job": "'$TREE_NAME'", "kernel": "'$GIT_DESCRIBE'"}' http://192.168.3.100:8888/job
     if [ "$TREE_NAME" == "arm-soc" ] || [ "$TREE_NAME" == "mainline" ] || [ "$TREE_NAME" == "stable" ] || [ "$TREE_NAME" == "rmk" ] || [ "$TREE_NAME" == "tegra" ]; then
         # Public Mailing List
         echo "Sending results pubic mailing list"

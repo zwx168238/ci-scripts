@@ -31,11 +31,11 @@
         # local copy of build scripts
         if [ ! -d local ]; then
           mkdir -p local
-          (cd local; git clone -b openlab2 https://github.com/joyxu/lava-ci.git)
+          (cd local; git clone https://github.com/open-estuary/ci-scripts.git -b openlab2.0)
         fi
 
-        (cd local/lava-ci; git pull)
-        export PATH=${WORKSPACE}/local/lava-ci:${PATH}
+        (cd local/ci-scripts; git pull)
+        export PATH=${WORKSPACE}/local/ci-scripts/jenkins-helper-script/common/lava-ci:${PATH}
 
         if [ ${ARCH_LIST} = "arm64" ]; then
           PWD=$(pwd)

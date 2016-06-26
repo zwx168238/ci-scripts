@@ -4,6 +4,7 @@
 sudo mkdir -p /var/www/images/kernel-ci
 sudo chmod -R 777 /var/www/images/kernel-ci
 sudo chown -R www-data /var/www/images/kernel-ci
+sudo adduser jenkins www-data
 
 #create /srv/mirrors/linux.git
 sudo mkdir -p /srv/mirrors

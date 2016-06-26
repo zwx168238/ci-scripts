@@ -1,0 +1,4 @@
+hostname: kernelci-backend
+role: staging
+master_key: 123456
+storage_url: 'http://114.119.4.74:808/'

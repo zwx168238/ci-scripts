@@ -14,3 +14,7 @@ curl -X POST -H "Content-Type: application/json" -H "Authorization: 123456" -d '
 
 #save the above token into the frontend host_vars backend_token
 echo "Please use the above token in the frontend host_vars as the backend_token!"
+
+#set upload url and token
+sudo cp buildpy.cfg /var/lib/jenkins/.buildpy.cfg
+sudo chown -vR jenkins:jenkins /var/lib/jenkins/.buildpy.cfg

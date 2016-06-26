@@ -157,6 +157,7 @@ if os.path.exists('/proc/cpuinfo'):
     output = subprocess.check_output('grep -c processor /proc/cpuinfo',
                                      shell=True)
     make_threads = int(output) + 2
+    make_threads = 16
 
 # CROSS_COMPILE
 if cross_compilers.has_key(arch):

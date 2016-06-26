@@ -7,7 +7,7 @@ sudo chown -R www-data /var/www/images/kernel-ci
 
 #create /srv/mirrors/linux.git
 sudo mkdir -p /srv/mirrors
-sudo git clone https://github.com/hisilicon/linaro-kernel.git /srv/mirrors/linux.git
+sudo git clone https://github.com/hisilicon/linux-hisi.git /srv/mirrors/linux.git
 
 #file server for file-server
 sudo apt-get install nginx

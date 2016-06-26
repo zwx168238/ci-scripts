@@ -66,11 +66,11 @@
             # local copy of build scripts
             if [ ! -d local ]; then
               mkdir -p local
-              (cd local; git clone --depth=1 https://github.com/kernelci/kernelci-build.git)
+              (cd local; git clone https://github.com/open-estuary/ci-scripts.git -b openlab2.0)
             fi
 
-            (cd local/kernelci-build; git pull)
-            export PATH=${WORKSPACE}/local/kernelci-build:${PATH}
+            (cd local/ci-scripts; git pull)
+            export PATH=${WORKSPACE}/local/ci-scripts/jenkins-helper-script/common/kernelci-build:${PATH}
 
             # Ensure TREE URL is decoded
             TREE=`python -c "import urllib, sys; print urllib.unquote(sys.argv[1])" ${TREE}`

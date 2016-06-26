@@ -30,12 +30,12 @@
     display-name: 'khilman - Kernel build complete'
     scm:
         - git:
-            url: https://github.com/joyxu/kernelci-build.git
+            url:  https://github.com/open-estuary/ci-scripts.git
             refspec: +refs/heads/master:refs/remotes/origin/master
             name: origin
             branches:
-                - refs/heads/master
-            basedir: local/kernelci-build
+                - openlab2.0
+            basedir: local/ci-scripts
             skip-tag: true
             shallow-clone: true
             wipe-workspace: false
@@ -45,7 +45,7 @@
         - shell: |
             #!/bin/bash
 
-            bash -x ./local/kernelci-build/build-complete.sh
+                bash -x ./local/ci-scritps/jenkins-helper-script/common/kernelci-build/build-complete.sh
     publishers:
         - trigger-parameterized-builds:
             - project: tbaker-kboot-bot

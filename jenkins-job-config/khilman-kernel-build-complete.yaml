@@ -48,7 +48,7 @@
                 bash -x ./local/ci-scritps/jenkins-helper-script/common/kernelci-build/build-complete.sh
     publishers:
         - trigger-parameterized-builds:
-            - project: tbaker-kboot-bot
+            - project: kernelci-kboot-bot
               condition: ALWAYS
               predefined-parameters: |
                   URL=http://114.119.4.74:808/${TREE_NAME}/${GIT_DESCRIBE}/

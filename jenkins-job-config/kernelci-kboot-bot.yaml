@@ -1,5 +1,5 @@
 - job:
-    name: kernelci-kboot-bot.yaml
+    name: kernelci-kboot-bot
     project-type: freestyle
     defaults: global
     logrotate:

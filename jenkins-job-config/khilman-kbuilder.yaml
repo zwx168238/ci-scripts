@@ -143,9 +143,9 @@
 
             # Remove the build output (important stuff in _install_ dir)
             rm -rf build
-            if [ $defconfig_translated = "defconfig" ]; then
-                sudo cp -rf _install_/* /var/www/images/kernel-ci/${TREE_NAME}/
-            fi
+            #if [ $defconfig_translated = "defconfig" ]; then
+            #    sudo cp -rf _install_/* /var/www/images/kernel-ci/${TREE_NAME}/
+            #fi
             echo "Kernel build result: ${RC}"
             echo ${RC} > build.result
 
@@ -208,10 +208,11 @@
                 }
         - trigger-parameterized-builds:
             - project: khilman-kernel-build-complete
-              property-file: ${TREE_NAME}/env.properties
               condition: ALWAYS
               predefined-parameters: |
                   PUBLISH=${PUBLISH}
                   TREE_NAME=${TREE_NAME}
                   ARCH_LIST=${ARCH_LIST}
                   GIT_DESCRIBE=${GIT_DESCRIBE}
+              property-file: ${TREE_NAME}/env.properties
+

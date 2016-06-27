@@ -10,6 +10,8 @@
             anonymous:
                 - job-read
                 - job-extended-read
+        - inject:
+             enabled: true
     parameters:
         - string:
             name: TREE_NAME
@@ -41,6 +43,9 @@
             wipe-workspace: false
     wrappers:
         - timestamps
+        - inject-ownership-variables:
+                job-variables: true
+                node-variables: true
     builders:
         - shell: |
             #!/bin/bash
@@ -50,6 +55,7 @@
         - trigger-parameterized-builds:
             - project: kernelci-kboot-bot
               condition: ALWAYS
+              current-parameters: true
               predefined-parameters: |
                   URL=http://114.119.4.74:808/${TREE_NAME}/${GIT_DESCRIBE}/
                   ARCH=${ARCH_LIST}

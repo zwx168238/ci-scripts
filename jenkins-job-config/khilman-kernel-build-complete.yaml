@@ -50,7 +50,7 @@
         - shell: |
             #!/bin/bash
 
-                bash -x ./local/ci-scritps/jenkins-helper-script/common/kernelci-build/build-complete.sh
+            bash -x ./local/ci-scripts/jenkins-helper-script/common/kernelci-build/build-complete.sh
     publishers:
         - trigger-parameterized-builds:
             - project: kernelci-kboot-bot

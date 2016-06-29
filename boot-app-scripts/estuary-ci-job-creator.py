@@ -142,12 +142,7 @@ def get_nfs_url(distro_url, device_type):
 
 # add by wuyanjun 2016-06-25
 def get_pubkey():
-    import getpass
-    username = getpass.getuser()
-    if username == 'root':
-        key_loc = os.path.join('/root', '.ssh', 'id_rsa.pub')
-    else:
-        key_loc = os.path.join('/home', username, '.ssh', 'id_rsa.pub')
+    key_loc = os.path.join(os.path.expandvars('$HOME'), '.ssh', 'id_rsa.pub')
    
     if os.path.exists(key_loc):
         pubkey = open(key_loc, 'r').read().rstrip()

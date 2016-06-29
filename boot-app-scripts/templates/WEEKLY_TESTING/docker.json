@@ -37,7 +37,7 @@
         }
     ],
     "device_type": "{device_type}",
-    "job_name": "{job_name}",
+    "job_name": "{job_name}-{nfs_distro}",
     "logging_level": "DEBUG",
     "priority": "high",
     "timeout": 172800

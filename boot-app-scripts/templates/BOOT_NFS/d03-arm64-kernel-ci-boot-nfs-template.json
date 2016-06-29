@@ -29,18 +29,6 @@
             }
         },
         {
-            "command": "lava_command_run",
-            "parameters": {
-            "commands": [
-                "test -d ~/.ssh || mkdir ~/.ssh",
-                "echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCpNXs2XE3jKYvGnMJRgmDJURTyNS2GSUGWj/h5VwJyrfonIbkBUPWkgmr/xJWqZ+Lpu5XdZvDrUxRJgy5OvjtrOjfdnEK0yFy6WFrX7RR5G/MyseJgHIWBAWr2DkT9BI1j8yotUbQ8iZXfFy4WHZh/4+qq4uSUw2/Z2uRRnYa2LOuEXQSAtaVjHhTRnixz5mDeOTge3b2udNH/skI6fcY6I3+kNTi2nBo58VvOX2vY0m6naVXIHegEA1zhzRoVqXwU5UkDyJ8znoUAb8T1DVBlUTwf8aQNL4bK7STeDSG2sy9xfp8JOfxLESxHtA9dSE9PIWD0FZShodTskpenD4Uj htsat@LAVA-SERVER'  >> ~/.ssh/authorized_keys",
-                "cp /etc/ssh/sshd_config /etc/ssh/sshd_config_bk",
-                "sed -i 's/^PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config",
-                "service ssh restart",
-                "ifconfig || ip addr"]
-            }
-        },
-        {
             "command": "submit_results",
             "parameters": {
                 "server": "LAVA_SERVER",

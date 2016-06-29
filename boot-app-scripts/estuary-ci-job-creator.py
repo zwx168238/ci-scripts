@@ -6,6 +6,7 @@ import re
 import os
 import shutil
 import argparse
+import subprocess
 import ConfigParser
 
 from lib import configuration
@@ -144,17 +145,17 @@ def get_pubkey():
     import getpass
     username = getpass.getuser()
     if username == 'root':
-        key_loc = os.path.join('/root', 'ssh', 'id_rsa.pub')
+        key_loc = os.path.join('/root', '.ssh', 'id_rsa.pub')
     else:
-        key_loc = os.path.join('/home', username, 'ssh', 'id_rsa.pub')
-    
+        key_loc = os.path.join('/home', username, '.ssh', 'id_rsa.pub')
+   
     if os.path.exists(key_loc):
-        pubkey = open(key_loc, 'r').read()
+        pubkey = open(key_loc, 'r').read().rstrip()
     else:
         path = os.getcwd()
         subprocess.call(os.path.join(path, "generate_keys.sh"), shell=True)
         try:
-            pubkey = open(key_loc, 'r').read()
+            pubkey = open(key_loc, 'r').read().rstrip()
         except Exception:
             pubkey = ""
     return pubkey

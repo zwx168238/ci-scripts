@@ -92,8 +92,8 @@ for x in $(cat /proc/cmdline); do
                     echo "invalid root device " ${root_para}
                     ;;
             esac
-            ;;
-        esac
+        ;;
+    esac
 done
 echo "final root device " ${root_id} ${root_dev}
 
@@ -131,6 +131,7 @@ if [ "$root_dev" != "nfs" ]; then
     done
 else
     [ ${#disk_list[@]} == 0 ] && ( echo "NFS + no_any_disk!"; exit )
+
 fi
 export CUR_RTDEV
 
@@ -181,10 +182,10 @@ if [ -z "$CUR_RTDEV" ]; then
     read -a nonboot_part <<< $(sudo parted /dev/${disk_list[0]} print |\
     awk '$1 ~ /[0-9]+/ {print $1}' | sort)
 else
-    #for non-nfs, only one root-disk, or not less than two disks. For one root-disk, if we choose it, then 
+    #for non-nfs, only one root-disk, or not less than two disks. For one root-disk, if we choose it, then
     #disk_list[0] is it; for multiple disks, the root-disk will not be in disk_list[].
     read -a nonboot_part <<< $(sudo parted /dev/${disk_list[0]} print |\
-        awk '$1 ~ /[0-9]+/ {print $1}' | sort)
+    awk '$1 ~ /[0-9]+/ {print $1}' | sort)
 fi
 
 
@@ -328,25 +329,26 @@ if [ "$full_intallation" = "yes" ]; then
     declare -A distros_en_size
     distros_en_size=(['ubuntu']="$ubuntu_partition_size"
                     ['opensuse']="$opensuse_partition_size"
-                    ['fedora']="$fedora_partition_size"
-                    ['debian']="$debian_partition_size"
+                    ['fedora']="$fedora_partition_size" 
+                    ['debian']="$debian_partition_size" 
                     ['centos']="$centos_partition_size")
 
     create_rootfs_in_disk "$target_system_type" "$rootfs_start" distros_en distros_en_size "${disk_list[@]}"
     # end by wuyanjun
     boot_dev=/dev/${disk_list[0]}1
     boot_uuid=`ls -al /dev/disk/by-uuid/ | grep "${boot_dev##*/}" | awk {'print $9'}`
-    mkdir $PWD/boot
-    sudo mount -t vfat /dev/${disk_list[0]}1 boot
-    sudo rm -rf boot/*
-    sudo cp -r /sys_setup/boot/* boot/
+    boot_temp_dir=boot_`date +%H_%M_%S_%Y_%m_%d`
+    mkdir $PWD/${boot_temp_dir}
+    sudo mount -t vfat /dev/${disk_list[0]}1 ${boot_temp_dir}
+    sudo rm -rf ${boot_temp_dir}/*
+    sudo cp -r /sys_setup/boot/* ${boot_temp_dir}/
 
     rootfs_dev=/dev/${disk_list[0]}$NEWRT_IDX
     rootfs_partuuid=`ls -al /dev/disk/by-partuuid/ | grep "${rootfs_dev##*/}" | awk {'print $9'}`
-    create_grub_file boot $target_system_type $boot_uuid $rootfs_partuuid
+    create_grub_file ${boot_temp_dir} $target_system_type $boot_uuid $rootfs_partuuid
     [ $? -ne 0 ] && echo "create grub file Failed" && exit 0
-    sudo umount boot
-    sudo rm -rf boot
+    sudo umount ${boot_temp_dir}
+    sudo rm -rf ${boot_temp_dir}
 
     exit 0
 else
@@ -383,7 +385,7 @@ else
 
     sel_name=""
     #3)  make the new root partition
-    #get the current partition number list before new creation.
+    #get the current partition number list before new creation. 
     #actually, $ROOT_FS is not necessary. we can find the new created partition still.
     read -a old_idx <<< $(sudo parted /dev/${disk_list[0]} print | grep "$ROOT_FS" | awk '{print $1}' | sort)
     echo "previous idx list is \"${old_idx[*]}\"${old_idx[*]}"
@@ -410,11 +412,11 @@ else
         NEWRT_IDX=${cur_idx[ind]}
 
         #we always re-format the root partition
-        mkfs -t ext3 /dev/${disk_list[0]}$NEWRT_IDX
+        mkfs -t ext4 /dev/${disk_list[0]}$NEWRT_IDX
     else
         para_sel part_name sel_name
             #we always re-format the root partition
-            mkfs -t ext3 $sel_name
+            mkfs -t ext4 $sel_name
         NEWRT_IDX=${sel_name##/dev/${disk_list[0]}}
     fi
     echo "newrt_idx is "$NEWRT_IDX
@@ -444,7 +446,7 @@ else
         read -a cur_idx <<< $(sudo parted /dev/${disk_list[0]} print | \
                 grep "user" | awk '{print $1}')
         USRDEV=${disk_list[0]}${cur_idx[0]}
-        mkfs -t ext3 /dev/$USRDEV
+        mkfs -t ext4 /dev/$USRDEV
         echo "user partition is $USRDEV"
     else
         sel_name=""
@@ -467,7 +469,7 @@ else
         USRDEV=${sel_name##/dev/}
         echo "user partition is $USRDEV"
         wait_user_choose "Is the user partition re-formatted?" "y|n"
-        [ "$assert_flag" != "y" ] || mkfs -t ext3 /dev/$USRDEV
+        [ "$assert_flag" != "y" ] || mkfs -t ext4 /dev/$USRDEV
     fi
 
     USRDEV_IDX=${USRDEV##${disk_list[0]}}
@@ -489,27 +491,31 @@ export NEWFS_DEV
 
 rootfs_dev2=/dev/${disk_list[0]}2
 rootfs_partuuid=`ls -al /dev/disk/by-partuuid/ | grep "${rootfs_dev2##*/}" | awk {'print $9'}`
-sudo mkdir $PWD/boot
-sudo mkdir $PWD/rootfs
-sudo mkdir $PWD/tmp
 
-sudo mount -t vfat /dev/${disk_list[0]}1 boot
-sudo mount -t ext3 /dev/${disk_list[0]}2 rootfs
+boot_tmp_dir=boot_`date +%H_%M_%S_%Y_%m_%d`
+rootfs_tmp_dir=rootfs_`date +%H_%M_%S_%Y_%m_%d`
+tmp_dir_dir=`date +%H_%M_%S_%Y_%m_%d`
+sudo mkdir $PWD/${boot_tmp_dir}
+sudo mkdir $PWD/${rootfs_tmp_dir}
+sudo mkdir $PWD/${tmp_dir_dir}
 
-sudo rm -rf boot/*
+sudo mount -t vfat /dev/${disk_list[0]}1 ${boot_tmp_dir}
+sudo mount -t ext4 /dev/${disk_list[0]}2 ${rootfs_tmp_dir}
+
+sudo rm -rf ${boot_tmp_dir}/*
 sudo rm -rf rootfs/*
 
-sudo cp -a /sys_setup/boot/* boot/
-rm -f boot/EFI/GRUB2/grub.cfg
-touch tmp/grub.cfg
-create_grub_file tmp $target_system_type $boot_uuid $rootfs_partuuid
+sudo cp -a /sys_setup/boot/* ${boot_tmp_dir}/
+rm -f ${boot_tmp_dir}/EFI/GRUB2/grub.cfg
+touch ${tmp_dir_dir}/grub.cfg
+create_grub_file ${tmp_dir_dir} $target_system_type $boot_uuid $rootfs_partuuid
 [ $? -ne 0 ] && echo "create grub file Failed" && exit 0
-mv tmp/grub.cfg boot/EFI/GRUB2/
+mv ${tmp_dir_dir}/grub.cfg ${boot_tmp_dir}/EFI/GRUB2/
 
 if [ "$ubuntu_en" == "yes" ]; then
-tar -xzf /sys_setup/distro/$build_PLATFORM/ubuntu$TARGET_ARCH/ubuntu"$TARGET_ARCH"_"$build_PLATFORM".tar.gz -C rootfs/
+tar -xzf /sys_setup/distro/$build_PLATFORM/ubuntu$TARGET_ARCH/ubuntu"$TARGET_ARCH"_"$build_PLATFORM".tar.gz -C ${rootfs_tmp_dir}/
 fi
 
-sudo umount boot rootfs
-sudo rm -rf boot rootfs tmp 
+sudo umount ${boot_tmp_dir} ${rootfs_tmp_dir}
+sudo rm -rf ${boot_tmp_dir} ${rootfs_tmp_dir} ${tmp_dir_dir}
 ##OK. Partitions are ready in Hard_disk. Can start the boot, root file-system making

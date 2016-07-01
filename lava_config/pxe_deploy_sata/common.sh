@@ -335,11 +335,12 @@ create_rootfs_in_disk()
         rootfs_start=$rootfs_end
 
         #we always re-format the root partition
-        #echo yes | mkfs -t ext3 /dev/${disk_list[0]}$NEWRT_IDX
-        sudo mkdir $PWD/rootfs
-        sudo mount -t ext3 /dev/${disk_list[0]}$NEWRT_IDX rootfs
+        #echo yes | mkfs -t ext4 /dev/${disk_list[0]}$NEWRT_IDX
+        rootfs_temp_dir=rootfs_`date +%H_%M_%S_%Y_%m_%d`
+        sudo mkdir $PWD/${rootfs_temp_dir}
+        sudo mount -t ext4 /dev/${disk_list[0]}$NEWRT_IDX ${rootfs_temp_dir}
 
-        sudo rm -rf rootfs/*
+        sudo rm -rf ${rootfs_temp_dir}/*
         distr_pre=""
         case $distro in 
             "ubuntu" | "fedora" | "debian" )
@@ -352,9 +353,9 @@ create_rootfs_in_disk()
                 distro_pre="OpenSuse"
                 ;;
         esac
-        tar -xzf /sys_setup/distro/$build_PLATFORM/${distro}$TARGET_ARCH/${distro_pre}_"$TARGET_ARCH".tar.gz -C rootfs/
-        sudo umount rootfs
-        sudo rm -fr rootfs
+        tar -xzf /sys_setup/distro/$build_PLATFORM/${distro}$TARGET_ARCH/${distro_pre}_"$TARGET_ARCH".tar.gz -C ${rootfs_temp_dir}/
+        sudo umount ${rootfs_temp_dir}
+        sudo rm -fr ${rootfs_temp_dir}
         case $target_system_type in 
             "ubuntu" | "opensuse" | "fedora" | "centos" | "debian" )
                 rootfs_dev=/dev/${disk_list[0]}$NEWRT_IDX
@@ -383,7 +384,7 @@ echo $@
         platform="D03"
         image="Image_D03"
         dtb="hip06-d03.dtb"
-        cmdline="linux /$image rdinit=/init root=PARTUUID=$rootfs_partuuid rootwait rootfstype=ext4 rw console=ttyS1,115200 earlycon=hisilpcuart,mmio,0xa01b0000,0,0x2f8 ip=dhcp"
+        cmdline="linux /$image rdinit=/init root=PARTUUID=$rootfs_partuuid rootwait rootfstype=ext4 rw console=ttyS0,115200 earlycon=hisilpcuart,mmio,0xa01b0000,0,0x2f8 ip=dhcp"
 	device_tree_cmd="devicetree /$dtb"
     else
 	echo -1	

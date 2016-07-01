@@ -24,7 +24,7 @@
             "command": "boot_linaro_image",
             "parameters": {
                 "options": [
-                    "boot_cmds=boot_cmds_sata"
+                    "boot_cmds=boot_cmds_sas"
                 ]
             }
         },

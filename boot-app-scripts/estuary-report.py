@@ -43,6 +43,7 @@ device_map = {'arndale': ['exynos5250-arndale', 'exynos'],
               'dummy-ssh': ['dummy-ssh', None],
               'dummy_ssh_d02': ['dummy_ssh_d02', None],
               'dummy_ssh_d01': ['dummy_ssh_d01', None],
+              'dummy_ssh_d03': ['dummy_ssh_d03', None],
               'kvm': ['x86-kvm', None]}
 
 
@@ -186,28 +187,20 @@ def parser_and_get_result(results, directory, report_directory):
 
 # add by wuyanjun
 # get the ip address of boards for the application jobs
-def get_ip_board_mapping(results, directory, report_directory):
-    list_dirs = os.walk(directory)
+def get_ip_board_mapping(contents, filename, directory, report_directory):
     ip_address = 'device_ip_type.txt'
     ip_address_path = os.path.join(report_directory, ip_address)
-    if os.path.exists(ip_address_path):
-        os.remove(ip_address_path)
-    for root, dirs, files in list_dirs:
-        for filename in files:
-            if filename.endswith('.txt'):
-                with open(ip_address_path, 'a') as sf:
-                    with open(os.path.join(root, filename)) as fp:
-                        mult_lines = fp.read()
-                        match = re.findall('addr:(\d+\.\d+\.\d+\.\d+)\s+Bcast', mult_lines)
-                        if not match:
-                            match_array = re.findall('inet\s+(\d+\.\d+\.\d+\.\d+).*brd', mult_lines)
-                            if len(match_array):
-                                match = match_array
-                        if match:
-                            board_type = get_board_type(root, filename)
-                            board_instance = get_board_instance(root, filename)
-                            sf.write(board_type + '\t' + board_instance +
-                                '\t' + match[-1] + '\n' )
+    with open(ip_address_path, 'a') as sf:
+        match = re.findall('addr:(\d+\.\d+\.\d+\.\d+)\s+Bcast', contents)
+        if not match:
+            match_array = re.findall('inet\s+(\d+\.\d+\.\d+\.\d+).*brd', contents)
+            if len(match_array):
+                match = match_array
+        if match:
+            board_type = get_board_type(directory, filename)
+            board_instance = get_board_instance(directory, filename)
+            sf.write(board_type + '\t' + board_instance +
+                '\t' + match[-1] + '\n' )
 
 def boot_report(config):
     connection, jobs, duration =  parse_json(config.get("boot"))
@@ -217,6 +210,13 @@ def boot_report(config):
     results = {}
     utils.mkdir(results_directory)
     test_plan = None
+
+    if config.get("lab"):
+        report_directory = os.path.join(results_directory, config.get("lab"))
+        utils.mkdir(report_directory)
+    else:
+        report_directory = results_directory
+
     for job_id in jobs:
         print 'Job ID: %s' % job_id
         # Init
@@ -398,6 +398,7 @@ def boot_report(config):
                 else:
                     platform_name = device_map[device_type][0]
 
+            # Create txt format boot metadata
             print 'Creating boot log for %s' % (platform_name + job_name + '_' + job_id)
             log = 'boot-%s.txt' % (platform_name + job_name + '_' + job_id)
             html = 'boot-%s.html' % (platform_name + job_name + '_' + job_id)
@@ -406,7 +407,9 @@ def boot_report(config):
             else:
                 directory = os.path.join(results_directory, kernel_defconfig)
             utils.ensure_dir(directory)
+
             utils.write_file(job_file, log, directory)
+
             if kernel_boot_time is None:
                 kernel_boot_time = '0.0'
             if results.has_key(kernel_defconfig):
@@ -419,6 +422,7 @@ def boot_report(config):
                     'job_id': job_id, 'job_name': job_short_name,
                     'kernel_boot_time': kernel_boot_time, 'result': result,
                     'device_name': device_name}]
+
             # Create JSON format boot metadata
             print 'Creating JSON format boot metadata'
             if config.get("lab"):
@@ -478,12 +482,9 @@ def boot_report(config):
             boot_meta['loadaddr'] = kernel_addr
             json_file = 'boot-%s.json' % (platform_name + job_name + '_' + job_id)
             utils.write_json(json_file, directory, boot_meta)
-
-    if config.get("lab"):
-        report_directory = os.path.join(results_directory, config.get("lab"))
-        utils.mkdir(report_directory)
-    else:
-        report_directory = results_directory
+            # add by wuyanjun
+            # add the ip device mapping
+            get_ip_board_mapping(job_file, log, directory, report_directory)
 
     if results and kernel_tree and kernel_version:
         print 'Creating summary for %s' % (kernel_version)
@@ -564,10 +565,10 @@ def boot_report(config):
                                                                         result['kernel_boot_time'],
                                                                         result['job_name'],
                                                                         result['result']))
-    # add by wuyanjun
     if results and directory:
         parser_and_get_result(results, directory, report_directory)
-        get_ip_board_mapping(results, directory, report_directory)
+
+
 
 def main(args):
     config = configuration.get_config(args)

@@ -111,6 +111,8 @@ def write_summary_for_app(result_dir):
                 for root1, dirs, files in os.walk(root):
                     for filename in files:
                         summary_name = os.path.join(result_dir, board_summary_name)
+                        if board_type not in os.path.join(root1, filename):
+                            continue
                         with open(summary_name, 'ab') as fd:
                             with open(os.path.join(root1, filename), 'rb') as rfd:
                                 lines = rfd.readlines()
@@ -242,7 +244,7 @@ def print_dic(dic_app, wfp):
     if len(dic_app.keys()) <= 0:
         return
     for k, v in dic_app.iteritems():
-        wfp.write("The board is " + k + '\n')
+        wfp.write("\nThe board is " + k + '\n')
         distro_keys = v.keys()             # opensuse, ubuntu and so on
         test_values = v.values()    # {'weekly_testing':{XXX}, 'network':{XXX}},{},
         total_test_case = []

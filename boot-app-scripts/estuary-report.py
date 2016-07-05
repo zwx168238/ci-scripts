@@ -11,6 +11,7 @@ import subprocess
 import re
 import urllib2
 import requests
+import shutil
 
 from lib import configuration
 from lib import utils
@@ -99,24 +100,32 @@ def get_board_type(directory, filename):
             if re.search('ssh', test_info['board_instance']):
                 board_type = test_info['board_instance'].split('_')[0]
             else:
-                board_verify = test_info['board'].split(',')[0]
-                for key in device_map.keys():
-                    if device_map[key][0] == board_verify:
-                        board_type = key
-                        break
-                    else:
-                        board_type = ''
-        except KeyError:
-            try:
-                board_verify = test_info['board'].split(',')[0]
-            except:
-                board_verify = test_info['board']
-            for key in device_map.keys():
-                if device_map[key][0] == board_verify:
-                    board_type = key
-                    break
+                if ',' in test_info['board']:
+                    board_verify = test_info['board'].split(',')[0]
+                    for key in device_map.keys():
+                        if device_map[key][0] == board_verify:
+                            board_type = key
+                            break
+                        else:
+                            board_type = ''
                 else:
-                    board_type = ''
+                    # for dummy_ssh_{board_type}
+                    board_type = test_info['board'].split('_')[-1]
+        except KeyError:
+            if ',' in test_info['board']:
+                try:
+                    board_verify = test_info['board'].split(',')[0]
+                except:
+                    board_verify = test_info['board']
+                    for key in device_map.keys():
+                        if device_map[key][0] == board_verify:
+                            board_type = key
+                            break
+                        else:
+                            board_type = ''
+            else:
+                # for jobs which has not incomplete
+                board_type = test_info['board'].split('_')[-1]
         return board_type
     return ''
 
@@ -149,41 +158,48 @@ def get_plans(directory, filename):
 
 # add by wuyanjun
 # parser the test result
-def parser_and_get_result(results, directory, report_directory):
-    list_dirs = os.walk(directory)
+def parser_and_get_result(contents, filename, directory, report_directory, connection):
     summary_post = '_summary.txt'
-    for root, dirs, files in list_dirs:
-        for filename in files:
-            if filename.endswith('device_ip_type.txt'):
-                os.remove(os.path.join(root, filename))
-                continue
-            if filename.endswith('.txt'):
-                board_type = get_board_type(directory, filename)
-                plan = get_plans(report_directory, filename)
-                if board_type and plan:
-                    summary = board_type + '_' + plan + summary_post
-                elif board_type:
-                    summary = board_type + summary_post
-                elif plan:
-                    summary = plan + summary_post
+    if filename.endswith('.txt'):
+        board_type = get_board_type(directory, filename)
+        plan = get_plans(report_directory, filename)
+        if board_type and plan:
+            summary = board_type + '_' + plan + summary_post
+        elif board_type:
+            summary = board_type + summary_post
+        elif plan:
+            summary = plan + summary_post
+        else:
+            summary = 'summary.txt'
+        if 'dummy_ssh' in filename or 'dummy-ssh' in filename:
+            with open(os.path.join(report_directory, summary), 'a') as sf:
+                job_id = filename.split("_")[-1].split(".")[0]
+                with open(os.path.join(directory, filename)) as fp:
+                    lines = fp.readlines()
+                write_flag = 0
+                # for job which has been run successfully
+                with open(os.path.join(directory, filename)) as fp:
+                    contents = fp.read()
+                if re.search('=======', contents) and re.search('Test.*?case.*?Result', contents):
+                    for i in range(0, len(lines)):
+                        line = lines[i]
+                        if write_flag == 1:
+                            sf.write(line)
+                            continue
+                        if re.search('=======', line) and re.search('Test.*?case.*?Result', lines[i+3]):
+                            write_flag = 1
+                            sf.write("job_id is: %s\n" % job_id)
+                            sf.write(line)
+                    sf.write('\n')
+                # for jobs which is Incomplete
                 else:
-                    summary = 'summary.txt'
-                if 'dummy_ssh' in filename or 'dummy-ssh' in filename:
-                    with open(os.path.join(report_directory, summary), 'a') as sf:
-                        job_id = filename.split("_")[-1].split(".")[0]
-                        with open(os.path.join(root, filename)) as fp:
-                            lines = fp.readlines()
-                        write_flag = 0
-                        for i in range(0, len(lines)):
-                            line = lines[i]
-                            if write_flag == 1:
-                                sf.write(line)
-                                continue
-                            if re.search('=======', line) and re.search('Test.*?case.*?Result', lines[i+3]):
-                                write_flag = 1
-                                sf.write("job_id is: %s\n" % job_id)
-                                sf.write(line)
-                        sf.write('\n')
+                    job_details = connection.scheduler.job_details(job_id)
+                    job_name = re.findall('testdef.*\/(.*?)\.yaml', job_details['original_definition'])
+                    sf.write("job_id is: %s\n" % job_id)
+                    sf.write("="*13 + "\n")
+                    sf.write(' '.join(job_name) + "\n")
+                    sf.write("="*13 + "\n")
+                    sf.write(' '.join(job_name) + "_test_cases\t\tFAIL\n\n")
 
 # add by wuyanjun
 # get the ip address of boards for the application jobs
@@ -213,9 +229,11 @@ def boot_report(config):
 
     if config.get("lab"):
         report_directory = os.path.join(results_directory, config.get("lab"))
-        utils.mkdir(report_directory)
     else:
         report_directory = results_directory
+    if os.path.exists(report_directory):
+        shutil.rmtree(report_directory)
+    utils.mkdir(report_directory)
 
     for job_id in jobs:
         print 'Job ID: %s' % job_id
@@ -254,7 +272,10 @@ def boot_report(config):
                 job_short_name = re.search(".*?([A-Z]+.*)", job_name).group(1)
             except Exception:
                 job_short_name = 'boot-test'
-        device_name = job_details['_actual_device_cache']['hostname']
+        try:
+            device_name = job_details['_actual_device_cache']['hostname']
+        except Exception:
+            continue
         result = jobs[job_id]['result']
         bundle = jobs[job_id]['bundle']
         if not device_type:
@@ -485,6 +506,7 @@ def boot_report(config):
             # add by wuyanjun
             # add the ip device mapping
             get_ip_board_mapping(job_file, log, directory, report_directory)
+            parser_and_get_result(job_file, log, directory, report_directory, connection)
 
     if results and kernel_tree and kernel_version:
         print 'Creating summary for %s' % (kernel_version)
@@ -565,10 +587,6 @@ def boot_report(config):
                                                                         result['kernel_boot_time'],
                                                                         result['job_name'],
                                                                         result['result']))
-    if results and directory:
-        parser_and_get_result(results, directory, report_directory)
-
-
 
 def main(args):
     config = configuration.get_config(args)

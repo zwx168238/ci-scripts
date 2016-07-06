@@ -36,7 +36,7 @@
                     "echo '{lava_worker_pubkey}'  >> ~/.ssh/authorized_keys",
                     "cp /etc/ssh/sshd_config /etc/ssh/sshd_config_bk",
                     "sed -i 's/^PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config",
-                    "service ssh restart",
+                    "service ssh restart || systemctl restart sshd",
                     "ifconfig || ip addr"
                 ]
             }

@@ -180,12 +180,12 @@ declare -a nonboot_part
 
 if [ -z "$CUR_RTDEV" ]; then
     read -a nonboot_part <<< $(sudo parted /dev/${disk_list[0]} print |\
-    awk '$1 ~ /[0-9]+/ {print $1}' | sort)
+    		awk '$1 ~ /[0-9]+/ {print $1}' | sort)
 else
     #for non-nfs, only one root-disk, or not less than two disks. For one root-disk, if we choose it, then
     #disk_list[0] is it; for multiple disks, the root-disk will not be in disk_list[].
     read -a nonboot_part <<< $(sudo parted /dev/${disk_list[0]} print |\
-    awk '$1 ~ /[0-9]+/ {print $1}' | sort)
+    		awk '$1 ~ /[0-9]+/ {print $1}' | sort)
 fi
 
 
@@ -257,6 +257,7 @@ EOM
 
     echo "sel_idx "$sel_idx "part_list count:"${#part_list[@]} "part_list[0] :"${part_list[0]}
     ind=0
+    if [ $sel_idx != $(( ${#part_list[@]} + 1 )) ]; then
     if [ $sel_idx == ${#part_list[@]} ]; then
         while [ -v part_list[ind] ]; do
             cmd_str="sudo parted "/dev/"${disk_list[0]} rm ${part_list[ind]}"
@@ -281,6 +282,7 @@ EOM
         move_array_unset  part_list $sel_idx $org_size
         echo "new partition id are ${part_list[@]}"
     fi
+    fi
 done
 
 ## the later two entry is not used again unset them
@@ -289,18 +291,18 @@ unset part_name[i]
 (( i-- ))
 unset part_name[i]
 
-#make another partition as the place where the new root filesystem locates
-#1) ensure that the disk partition table is gpt
-if [ "$(sudo parted /dev/${disk_list[0]} print | \
-    awk '/Partition / && /Table:/ {print $NF}')" != "gpt" ]; then
-    echo "All current partitions will be deleted"
-    if ! ( sudo parted /dev/${disk_list[0]} mklabel gpt ); then
-        echo "configure ${disk_list[0]} label as gpt FAIL"
-        exit
-    fi
-fi
-
 if [ "$full_intallation" = "yes" ]; then
+    #make another partition as the place where the new root filesystem locates
+    #1) ensure that the disk partition table is gpt
+    if [ "$(sudo parted /dev/${disk_list[0]} print | \
+	    awk '/Partition / && /Table:/ {print $NF}')" != "gpt" ]; then
+	echo "All current partitions will be deleted"
+	if ! ( sudo parted /dev/${disk_list[0]} mklabel gpt ); then
+            echo "configure ${disk_list[0]} label as gpt FAIL"
+            exit
+        fi
+    fi
+
     boot_id=$(sudo parted /dev/${disk_list[0]} print | awk '$1 ~ /[0-9]+/ && /boot/ {print $1}')
     if [ -z "$boot_id" ]; then
         echo -n "make boot partition"
@@ -353,6 +355,15 @@ if [ "$full_intallation" = "yes" ]; then
     exit 0
 else
     #make another partition as the place where the new root filesystem locates
+    #1) ensure that the disk partition table is gpt
+    if [ "$(sudo parted /dev/${disk_list[0]} print | \
+	awk '/Partition / && /Table:/ {print $NF}')" != "gpt" ]; then
+	echo "All current partitions will be deleted"
+	if ! ( sudo parted /dev/${disk_list[0]} mklabel gpt ); then
+		echo "configure ${disk_list[0]} label as gpt FAIL"
+		exit
+	fi
+    fi
     #2) check whether the boot partition exist
     boot_id=$(sudo parted /dev/${disk_list[0]} print | awk '$1 ~ /[0-9]+/ && /boot/ {print $1}')
     ###in D02, if [ -n "$boot_id" -a $boot_id -ne 1 ]; then always warning "too many parameters"
@@ -499,11 +510,13 @@ sudo mkdir $PWD/${boot_tmp_dir}
 sudo mkdir $PWD/${rootfs_tmp_dir}
 sudo mkdir $PWD/${tmp_dir_dir}
 
+sudo mkfs -t vfat /dev/${disk_list[0]}1
+sudo mkfs -t ext4 /dev/${disk_list[0]}2
 sudo mount -t vfat /dev/${disk_list[0]}1 ${boot_tmp_dir}
 sudo mount -t ext4 /dev/${disk_list[0]}2 ${rootfs_tmp_dir}
 
 sudo rm -rf ${boot_tmp_dir}/*
-sudo rm -rf rootfs/*
+sudo rm -rf ${rootfs_tmp_dir}/*
 
 sudo cp -a /sys_setup/boot/* ${boot_tmp_dir}/
 rm -f ${boot_tmp_dir}/EFI/GRUB2/grub.cfg

@@ -338,6 +338,7 @@ create_rootfs_in_disk()
         #echo yes | mkfs -t ext4 /dev/${disk_list[0]}$NEWRT_IDX
         rootfs_temp_dir=rootfs_`date +%H_%M_%S_%Y_%m_%d`
         sudo mkdir $PWD/${rootfs_temp_dir}
+        sudo mkfs -t ext4 /dev/${disk_list[0]}$NEWRT_IDX
         sudo mount -t ext4 /dev/${disk_list[0]}$NEWRT_IDX ${rootfs_temp_dir}
 
         sudo rm -rf ${rootfs_temp_dir}/*

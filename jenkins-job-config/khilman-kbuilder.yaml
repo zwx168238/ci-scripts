@@ -62,6 +62,7 @@
             #!/bin/bash
 
             set -x
+            ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
             # local copy of build scripts
             if [ ! -d local ]; then

@@ -2,3 +2,11 @@ hostname: kernelci-backend
 role: staging
 master_key: 123456
 storage_url: 'http://114.119.4.74:808/'
+debug = True
+smtp_host = 'smtp.gmail.com'
+smtp_user = 'htsatcambci'
+smtp_sender = 'htsatcambci@gmail.com'
+smtp_sender_desc = 'Plinth CI'
+smtp_password = 'xw123456789'
+smtp_port = 465
+info_email = 'xuwei5@hisilicon.com'

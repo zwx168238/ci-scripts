@@ -39,7 +39,6 @@
                 - openlab2.0
             basedir: local/ci-scripts
             skip-tag: true
-            shallow-clone: true
             wipe-workspace: false
     wrappers:
         - timestamps

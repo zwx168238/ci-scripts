@@ -180,13 +180,13 @@ def parser_and_get_result(contents, filename, directory, report_directory, conne
                 # for job which has been run successfully
                 with open(os.path.join(directory, filename)) as fp:
                     contents = fp.read()
-                if re.search('=======', contents) and re.search('Test.*?case.*?Result', contents):
+                if re.search("=+", contents) and re.search('Test.*?case.*?Result', contents):
                     for i in range(0, len(lines)):
                         line = lines[i]
                         if write_flag == 1:
                             sf.write(line)
                             continue
-                        if re.search('=======', line) and re.search('Test.*?case.*?Result', lines[i+3]):
+                        if re.search("=+", line) and re.search("=+", lines[i+2]) and re.search('Test.*?case.*?Result', lines[i+3]):
                             write_flag = 1
                             sf.write("job_id is: %s\n" % job_id)
                             sf.write(line)

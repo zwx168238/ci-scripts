@@ -25,10 +25,10 @@ sudo pip install jenkins-job-builder
 #import the jobs
 git clone -b openlab2 https://github.com/open-estuary/ci-scripts.git
 cd ci-scripts/jenkins-job-config/
-jenkins-jobs --conf etc/jenkins_jobs.ini update  khilman-trigger-flex.yaml
-jenkins-jobs --conf etc/jenkins_jobs.ini update  khilman-kbuilder.yaml
-jenkins-jobs --conf etc/jenkins_jobs.ini update  khilmna-kernel-build-complete.yaml
-jenkins-jobs --conf etc/jenkins_jobs.ini update  kernelci-kboot-bot.yaml
+jenkins-jobs --conf ../deploy-script/jenkins/etc/jenkins_jobs.ini update  khilman-trigger-flex.yaml
+jenkins-jobs --conf ../deploy-script/jenkins/etc/jenkins_jobs.ini update  khilman-kbuilder.yaml
+jenkins-jobs --conf ../deploy-script/jenkins/etc/jenkins_jobs.ini update  khilmna-kernel-build-complete.yaml
+jenkins-jobs --conf ../deploy-script/jenkins/etc/jenkins_jobs.ini update  kernelci-kboot-bot.yaml
 
 #create /var/www/images/kernerl-ci 
 sudo mkdir -p /var/www/images/kernel-ci

@@ -15,12 +15,17 @@
             "parameters": {
                 "dtb": "{dtb_url}",
                 "kernel": "{kernel_url}",
-               "bootloadertype": "ipxe",
+                "bootloadertype": "ipxe",
                 "target_type": "ubuntu"
             }
         },
         {
-            "command": "boot_linaro_image"
+            "command": "boot_linaro_image",
+            "parameters": {
+		    "options": [
+			    "boot_cmds=boot_cmds_nfs"
+		    ]
+	    }
         },
         {
             "command": "submit_results",

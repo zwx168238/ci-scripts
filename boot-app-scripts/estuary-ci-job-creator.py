@@ -126,13 +126,16 @@ def setup_job_dir(directory):
 distro_list = []
 def get_nfs_url(distro_url, device_type):
     parse_re = re.compile('href="([^./"?][^"?]*)"')
-    try:
-        html = urllib2.urlopen(distro_url, timeout=30).read()
-    except IOError, e:
-        print 'error reading %s: %s' % (url, e)
-        exit(1)
-    if not distro_url.endswith('/'):
-        distro_url += '/'
+    if not distro_url.endswith('.tar.gz') or not distro_url.endswith('.gz'):
+        try:
+            html = urllib2.urlopen(distro_url, timeout=30).read()
+        except IOError, e:
+            print 'error reading %s: %s' % (url, e)
+            exit(1)
+        if not distro_url.endswith('/'):
+            distro_url += '/'
+    else:
+        html = distro_url
     files= parse_re.findall(html)
     dirs = []
     for name in files:

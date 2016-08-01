@@ -28,7 +28,7 @@
             "parameters": {
                 "commands": [
                     "cd /sys_setup/bin",
-                    "echo \"y\\n\" ./sys_setup.sh -d {distro_name}"
+                    "echo \"y\\n\" | ./sys_setup.sh -d {distro_name}"
                 ]
             }
         },

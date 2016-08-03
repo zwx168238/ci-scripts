@@ -433,7 +433,7 @@ def boot_report(config):
             json_file = 'boot-%s.json' % platform_name
             utils.write_json(json_file, directory, boot_meta)
             print 'Creating html version of boot log for %s' % platform_name
-            cmd = 'python ../log2html.py %s' % os.path.join(directory, log)
+            cmd = 'python log2html.py %s' % os.path.join(directory, log)
             subprocess.check_output(cmd, shell=True)
             if config.get("lab") and config.get("api") and config.get("token"):
                 print 'Sending boot result to %s for %s' % (config.get("api"), platform_name)

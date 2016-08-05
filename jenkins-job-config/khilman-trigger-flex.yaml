@@ -79,7 +79,7 @@
             rm -f *.properties
             git remote update
 
-            branch=$(git for-each-ref --sort=-committerdate refs/remotes/origin | grep ${branch_prefix} | head -n 1 | sed "s/.*${branch_prefix}/${branch_prefix}/")
+            branch=$(git for-each-ref --sort=-committerdate refs/remotes/origin | grep refs/remotes/origin/${branch_prefix} | head -n 1 | sed "s/.*${branch_prefix}/${branch_prefix}/")
             git checkout -f origin/$branch
             if [ $? != 0 ]; then
               echo "ERROR: branch $branch doesn't exist"

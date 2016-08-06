@@ -1,4 +1,4 @@
-
+{
     "actions": [
         {
             "command": "deploy_linaro_kernel",

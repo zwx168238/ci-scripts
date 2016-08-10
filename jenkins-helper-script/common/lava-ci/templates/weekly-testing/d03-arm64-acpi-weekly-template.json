@@ -23,22 +23,22 @@
             "command": "boot_linaro_image",
             "parameters": {
 		    "options": [
-			    "boot_cmds=boot_cmds_nfs"
+			    "boot_cmds=boot_cmds_nfs_acpi"
 		    ]
 	    }
         },
-		{
-		  "command": "lava_test_shell",
-		  "parameters": {
-			"testdef_repos": [
-			  {
-				"git-repo": "git://git.linaro.org/qa/test-definitions.git",
-				"testdef": "ubuntu/device-tree.yaml"
-			  }
-			],
-			"timeout": 172800
+	{
+	  "command": "lava_test_shell",
+	  "parameters": {
+		"testdef_repos": [
+		  {
+			"git-repo": "git://git.linaro.org/qa/test-definitions.git",
+			"testdef": "ubuntu/device-tree.yaml"
 		  }
-		},
+		],
+		"timeout": 172800
+	  }
+	},
         {
             "command": "lava_test_shell",
             "parameters": {
@@ -51,21 +51,21 @@
                 "timeout": 172800
             }
         },
-		{
-		  "command": "lava_test_shell",
-		  "parameters": {
-			"testdef_repos": [
-			  {
-				"git-repo": "git://git.linaro.org/qa/test-definitions.git",
-				"parameters": {
-					"SKIPFILE": "skipfile-lsk-juno"
-				},
-				"testdef": "ubuntu/ltp.yaml"
-			  }
-			],
-			"timeout": 172800
+	{
+	  "command": "lava_test_shell",
+	  "parameters": {
+		"testdef_repos": [
+		  {
+			"git-repo": "git://git.linaro.org/qa/test-definitions.git",
+			"parameters": {
+				"SKIPFILE": "skipfile-lsk-juno"
+			},
+			"testdef": "ubuntu/ltp.yaml"
 		  }
-		},
+		],
+		"timeout": 172800
+	  }
+	},
         {
             "command": "lava_test_shell",
             "parameters": {

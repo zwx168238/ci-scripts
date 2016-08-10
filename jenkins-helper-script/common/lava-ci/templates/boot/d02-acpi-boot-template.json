@@ -20,7 +20,12 @@
             }
         },
         {
-            "command": "boot_linaro_image"
+            "command": "boot_linaro_image",
+	    "parameters": {
+		    "options": [
+			    "boot_cmds=boot_cmds_nfs_acpi"
+		    ]
+	    }
         },
         {
             "command": "submit_results",

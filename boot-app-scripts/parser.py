@@ -115,24 +115,30 @@ def write_summary_for_app(result_dir):
                             continue
                         with open(summary_name, 'ab') as fd:
                             with open(os.path.join(root1, filename), 'rb') as rfd:
+                                total_temp = 0
+                                fail_temp = 0
+                                suc_temp = 0
                                 lines = rfd.readlines()
                                 fd.write("Test category: " + filename + '\n')
                                 for i in range(0, len(lines)):
                                     try:
                                         if re.match(total_str, lines[i]):
-                                            total_num_case += string.atoi(re.findall('(\d+)', lines[i])[0][0])
+                                            total_temp = string.atoi(re.findall('(\d+)', lines[i])[0][0])
+                                            total_num_case += total_temp
                                         elif re.match(fail_str, lines[i]):
-                                            fail_num_case += string.atoi(re.findall('(\d+)', lines[i])[0][0])
+                                            fail_temp = string.atoi(re.findall('(\d+)', lines[i])[0][0])
+                                            fail_num_case += fail_temp
                                         elif re.match(suc_str, lines[i]):
-                                            suc_num_case += string.atoi(re.findall('(\d+)', lines[i])[0][0])
+                                            suc_temp = string.atoi(re.findall('(\d+)', lines[i])[0][0])
+                                            suc_num_case += suc_temp
                                         else:
                                             if re.search('FAIL', lines[i]):
                                                 job_id = re.search('job_id.*?(\d+)', lines[i-1]).group(1)
                                                 fd.write('\t' + str(job_id) + '\t' + lines[i])
                                     except Exception:
                                         continue
-                                fd.write("\ttotal: %s  fail: %s  suc: %s\n" %\
-                                        (total_num_case, fail_num_case, suc_num_case))
+                                fd.write("\ttotal: %s  fail: %s  suc: %s\n\n" %\
+                                        (total_temp, fail_temp, suc_temp))
                 dic_app_cases[board_type] = [total_num_case, fail_num_case, suc_num_case]
     return dic_app_cases
 
@@ -303,6 +309,9 @@ def summary_for_apps(summary_dir, wfp):
                         all_test_category = re.findall("Test category:\s+(.*)\n", block)
                         if all_test_category and block:
                             test_category = all_test_category[0]
+                            tmp_suc = 0
+                            tmp_fail = 0
+                            tmp_total = 0
                             values = re.findall(".+?\s(\d+)", block)
                             if len(values) == 3:
                                 tmp_suc = int(values[2])

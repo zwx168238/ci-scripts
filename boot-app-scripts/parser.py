@@ -347,11 +347,11 @@ def summary_all_files(summary_dir):
         (total_num_app, fail_num_app, suc_num_app) = \
                 summary_for_apps(summary_dir, wfp)
 
-        wfp.write('\n' + "*"*20 + " SUMMARY START " + "*"*20 + '\n')
+        wfp.write("\n" + "*"*20 + " SUMMARY START " + "*"*20 + "\n")
         wfp.write(total_str + str(total_num + total_num_app))
-        wfp.write('\n' + fail_str + str(fail_num + fail_num_app))
-        wfp.write('\n' + suc_str + str(suc_num + suc_num_app))
-        wfp.write('\n' + "*"*20 + " SUMMARY END " + "*"*20 + '\n')
+        wfp.write("\n" + fail_str + str(fail_num + fail_num_app))
+        wfp.write("\n" + suc_str + str(suc_num + suc_num_app))
+        wfp.write("\n" + "*"*20 + " SUMMARY END " + "*"*20 + '\n')
 
 def _get_distro(path):
     distro = ""

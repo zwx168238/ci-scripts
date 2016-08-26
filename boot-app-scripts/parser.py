@@ -246,45 +246,47 @@ def parser_all_files(result_dir):
     else:
         summary_for_board(result_dir, result_dir)
 
-def print_dic(dic_app, wfp):
+def print_dic(dic_app, summary_file):
     if len(dic_app.keys()) <= 0:
         return
-    for k, v in dic_app.iteritems():
-        wfp.write("\nThe board is " + k + '\n')
-        distro_keys = v.keys()             # opensuse, ubuntu and so on
-        test_values = v.values()    # {'weekly_testing':{XXX}, 'network':{XXX}},{},
-        total_test_case = []
-        for test_value in test_values:
-            tmp_test_kind = test_value.keys()  # 'weekly_testing', 'network', ...
-            total_test_case = list(set(total_test_case).union(set(tmp_test_kind)))
-        # print the title
-        wfp.write('Distro\t')
-        for i in range(0, len(total_test_case)):
-            wfp.write(total_test_case[i]+'\t')
-        wfp.write('sum\n')
-        # print the distro and test case value
-        for distro in distro_keys:
-            total_fail = 0
-            total_suc = 0
-            wfp.write(distro + '\t')
-            for test_classify in total_test_case:
-                try:
-                    fail_num = v[distro][test_classify]['fail']
-                    suc_num = v[distro][test_classify]['suc']
-                    total_fail += fail_num
-                    total_suc += suc_num
-                    wfp.write('F:' + str(fail_num) + ' P:' + str(suc_num) + '\t')
-                except Exception:
-                    wfp.write('F: 0 P: 0\t')
-                    continue
-            wfp.write('F:' + str(total_fail) + ' P:' + str(total_suc) + '\n')
-    # end of the print
+    with open(summary_file, "b"):
+        wfp.write("\n" + "*"*20 + " APPLICATION SUMMARY START " + "*"*20 + '\n')
+        for k, v in dic_app.iteritems():
+            wfp.write("\nThe board is " + k + '\n')
+            distro_keys = v.keys()             # opensuse, ubuntu and so on
+            test_values = v.values()    # {'weekly_testing':{XXX}, 'network':{XXX}},{},
+            total_test_case = []
+            for test_value in test_values:
+                tmp_test_kind = test_value.keys()  # 'weekly_testing', 'network', ...
+                total_test_case = list(set(total_test_case).union(set(tmp_test_kind)))
+            # print the title
+            wfp.write('Distro\t')
+            for i in range(0, len(total_test_case)):
+                wfp.write(total_test_case[i]+'\t')
+            wfp.write('sum\n')
+            # print the distro and test case value
+            for distro in distro_keys:
+                total_fail = 0
+                total_suc = 0
+                wfp.write(distro + '\t')
+                for test_classify in total_test_case:
+                    try:
+                        fail_num = v[distro][test_classify]['fail']
+                        suc_num = v[distro][test_classify]['suc']
+                        total_fail += fail_num
+                        total_suc += suc_num
+                        wfp.write('F:' + str(fail_num) + ' P:' + str(suc_num) + '\t')
+                    except Exception:
+                        wfp.write('F: 0 P: 0\t')
+                        continue
+                wfp.write('F:' + str(total_fail) + ' P:' + str(total_suc) + '\n')
+        wfp.write("\n" + "*"*20 + " APPLICATION SUMMARY END " + "*"*20 + '\n\n')
+        # end of the print
 
-def summary_for_apps(summary_dir, wfp):
+def summary_for_apps(summary_dir, summary_file):
     total_num_app = 0
     fail_num_app = 0
     suc_num_app = 0
-    wfp.write("\n" + "*"*20 + " APPLICATION SUMMARY START " + "*"*20 + '\n')
     dic_app = {}
     for root, dirs, files in os.walk(summary_dir):
         for filename in files:
@@ -325,8 +327,7 @@ def summary_for_apps(summary_dir, wfp):
                                 total_num_app += tmp_total
                             if test_category not in tmp_dic.keys():
                                 tmp_dic[test_category] = {'fail': tmp_fail, 'suc': tmp_suc}
-    print_dic(dic_app, wfp)
-    wfp.write("\n" + "*"*20 + " APPLICATION SUMMARY END " + "*"*20 + '\n')
+    print_dic(dic_app, summary_file)
     print dic_app
     return (total_num_app, fail_num_app, suc_num_app)
 
@@ -353,11 +354,10 @@ def summary_all_files(summary_dir):
         wfp.write("\n" + suc_str + str(suc_num))
         wfp.write("\n" + "*"*20 + " BOOT SUMMARY END" + "*"*20 + '\n')
 
-        (total_num_app, fail_num_app, suc_num_app) = \
-                summary_for_apps(summary_dir, wfp)
-
-        wfp.write("\n" + "*"*20 + " SUMMARY START " + "*"*20 + "\n")
-        wfp.write(total_str + str(total_num + total_num_app))
+    (total_num_app, fail_num_app, suc_num_app) = summary_for_apps(summary_dir, summary_file)
+    with open(summary_file, "b"):
+        wfp.write("*"*20 + " SUMMARY START " + "*"*20 + '\n\n')
+        wfp.write("\n" + total_str + str(total_num + total_num_app))
         wfp.write("\n" + fail_str + str(fail_num + fail_num_app))
         wfp.write("\n" + suc_str + str(suc_num + suc_num_app))
         wfp.write("\n" + "*"*20 + " SUMMARY END " + "*"*20 + '\n')

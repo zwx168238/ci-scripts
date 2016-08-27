@@ -249,7 +249,7 @@ def parser_all_files(result_dir):
 def print_dic(dic_app, summary_file):
     if len(dic_app.keys()) <= 0:
         return
-    with open(summary_file, "b"):
+    with open(summary_file, "ab") as wfp:
         wfp.write("\n" + "*"*20 + " APPLICATION SUMMARY START " + "*"*20 + '\n')
         for k, v in dic_app.iteritems():
             wfp.write("\nThe board is " + k + '\n')
@@ -335,7 +335,7 @@ def summary_all_files(summary_dir):
     summary_file = os.path.join(summary_dir, whole_summary_name)
     if os.path.exists(summary_file):
         os.remove(summary_file)
-    with open(summary_file, 'ab') as wfp:
+    with open(summary_file, 'w') as wfp:
         total_num = 0
         suc_num = 0
         fail_num = 0
@@ -355,8 +355,8 @@ def summary_all_files(summary_dir):
         wfp.write("\n" + "*"*20 + " BOOT SUMMARY END" + "*"*20 + '\n')
 
     (total_num_app, fail_num_app, suc_num_app) = summary_for_apps(summary_dir, summary_file)
-    with open(summary_file, "b"):
-        wfp.write("*"*20 + " SUMMARY START " + "*"*20 + '\n\n')
+    with open(summary_file, "ab") as wfp:
+        wfp.write("*"*20 + " SUMMARY START " + "*"*20 + '\n')
         wfp.write("\n" + total_str + str(total_num + total_num_app))
         wfp.write("\n" + fail_str + str(fail_num + fail_num_app))
         wfp.write("\n" + suc_str + str(suc_num + suc_num_app))

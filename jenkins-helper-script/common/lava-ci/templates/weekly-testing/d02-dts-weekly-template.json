@@ -10,7 +10,8 @@
                 "kernel.endian": "{endian}",
                 "kernel.defconfig": "{defconfig}",
                 "platform.fastboot": "{fastboot}",
-                "test.plan": "{test_plan}"
+                "test.plan": "{test_plan}",
+		"boot.type": "DTS"
             },
             "parameters": {
                 "dtb": "{dtb_url}",

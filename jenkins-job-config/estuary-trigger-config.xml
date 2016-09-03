@@ -38,7 +38,7 @@
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
   <triggers>
     <hudson.triggers.TimerTrigger>
-      <spec>H  H/24 * * *</spec>
+      <spec>H  H  H/2  *  *</spec>
     </hudson.triggers.TimerTrigger>
   </triggers>
   <concurrentBuild>false</concurrentBuild>
@@ -96,3 +96,4 @@ rm -f ${TREE_BRANCH}-build.properties</command>
     <runSequentially>true</runSequentially>
   </executionStrategy>
 </matrix-project>
+

@@ -4,6 +4,7 @@
   <description></description>
   <keepDependencies>false</keepDependencies>
   <properties>
+    <hudson.plugins.disk__usage.DiskUsageProperty plugin="disk-usage@0.28"/>
     <jenkins.model.BuildDiscarderProperty>
       <strategy class="hudson.tasks.LogRotator">
         <daysToKeep>-1</daysToKeep>
@@ -12,7 +13,6 @@
         <artifactNumToKeep>-1</artifactNumToKeep>
       </strategy>
     </jenkins.model.BuildDiscarderProperty>
-    <hudson.plugins.disk__usage.DiskUsageProperty plugin="disk-usage@0.28"/>
     <hudson.model.ParametersDefinitionProperty>
       <parameterDefinitions>
         <hudson.model.StringParameterDefinition>
@@ -43,7 +43,7 @@
         <hudson.model.StringParameterDefinition>
           <name>APP_PLAN</name>
           <description></description>
-          <defaultValue>WEEKLY_TESTING BOOT_NFS</defaultValue>
+          <defaultValue>WEEKLY_TESTING BOOT_NFS BOOT_ESL BOOT_NORFLASH BOOT_PXE PERF_TESTING</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>USER</name>
@@ -58,7 +58,7 @@
         <hudson.model.StringParameterDefinition>
           <name>LAVA_SERVER</name>
           <description></description>
-          <defaultValue>http://192.168.3.100/RPC2</defaultValue>
+          <defaultValue>http://192.168.3.100:8089/RPC2</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>LAVA_USER</name>
@@ -108,7 +108,7 @@
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
   </properties>
-  <scm class="hudson.plugins.git.GitSCM" plugin="git@2.4.4">
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@2.5.0">
     <configVersion>2</configVersion>
     <userRemoteConfigs>
       <hudson.plugins.git.UserRemoteConfig>
@@ -194,6 +194,7 @@ popd    # restore current work directory
 echo $GIT_DESCRIBE
 cat &lt;&lt; EOF &gt; ${WORKSPACE}/env.properties
 GIT_DESCRIBE=$GIT_DESCRIBE
+EXECUTE_STATUS=&quot;Failure&quot;
 SHELL_PLATFORM=$SHELL_PLATFORM
 SHELL_DISTRO=$SHELL_DISTRO
 BOOT_PLAN=$BOOT_PLAN
@@ -226,16 +227,17 @@ PATH=${WORKSPACE}/opt/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu/bin:${WO
 
 function build_image_for_sata()
 {
-    image_dir=$1
+    image_dir=${BUILD_DIR}/$1
     defconfig_file=arch/arm64/configs/defconfig
     dts_file=arch/arm64/boot/dts/hisilicon/hip05-d02.dts
 
-    cd kernel
+    pushd ${OPEN_ESTUARY_DIR}/kernel
 
     if [ -f ${defconfig_file}_bk ]; then
     	rm -fr ${defconfig_file}
         mv ${defconfig_file}_bk  ${defconfig_file}
     fi
+
     if [ -f ${dts_file}_bk ]; then
     	rm -fr ${dts_file}
         mv ${dts_file}_bk  ${dts_file}
@@ -251,14 +253,14 @@ function build_image_for_sata()
 
 	make defconfig
     make -j $CPU_NUM
-    cp ./arch/arm64/boot/Image  ../${image_dir}/Image-sata
-    cp ./arch/arm64/boot/dts/hisilicon/hip05-d02.dtb  ../${image_dir}/hip05-d02-sata.dtb
+    cp ./arch/arm64/boot/Image ${image_dir}/Image-sata
+    cp ./arch/arm64/boot/dts/hisilicon/hip05-d02.dtb ${image_dir}/hip05-d02-sata.dtb
 
     make clean
-    rm -fr ${dts_file} &amp;&amp; mv ${dts_file}_bk ${dts_file}
-    rm -fr ${defconfig_file} &amp;&amp; mv ${defconfig_file}_bk ${defconfig_file}
+    rm -f ${dts_file} &amp;&amp; mv ${dts_file}_bk ${dts_file}
+    rm -f ${defconfig_file} &amp;&amp; mv ${defconfig_file}_bk ${defconfig_file}
 
-    cd ..
+    popd
 }
 
 function print_time()
@@ -273,10 +275,12 @@ export CROSS_COMPILE=${WORKSPACE}/opt/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-li
 export
 
 CPU_NUM=$(cat /proc/cpuinfo | grep processor | wc -l)
-
 CI_SCRIPTS_DIR=${WORKSPACE}/local/ci-scripts
 OPEN_ESTUARY_DIR=${WORKSPACE}/local/open-estuary
+BUILD_DIR=${OPEN_ESTUARY_DIR}/build
+ESTUARY_CFG_FILE=${OPEN_ESTUARY_DIR}/estuary/estuarycfg.json
 
+###################### timestamp file #########################
 timefile=${WORKSPACE}/timestamp.log
 if [ -f $timefile ]; then
 	rm -fr $timefile
@@ -286,24 +290,29 @@ fi
 
 print_time &quot;the begin time is &quot;
 
-# prepare repo tool
-if [ ! -e bin ]; then 
+###################### prepare repo tool ######################
+if [ ! -e bin ]; then
 	mkdir -p bin;
 	wget -c http://www.open-estuary.com/EstuaryDownloads/tools/repo -O bin/repo
-	chmod a+x bin/repo; 
+	chmod a+x bin/repo;
 fi
 
 export PATH=${WORKSPACE}/bin:$PATH;
 
-# get the newest content of git repos
+############## get the newest content of git repos ############
 if [ ! -e $OPEN_ESTUARY_DIR ]; then
 	mkdir -p $OPEN_ESTUARY_DIR;
 fi
 
-pushd $OPEN_ESTUARY_DIR;    # change current work directory
+pushd $OPEN_ESTUARY_DIR;    # enter OPEN_ESTUARY_DIR
 
-repo abandon master
+# remove link file in distro
+find distro/ -type l -exec rm {} \;
+
+# sync and checkout files from repo
 repo forall -c git reset --hard
+repo forall -c git clean -dxf
+#repo abandon master
 
 if [ &quot;$VERSION&quot;x != &quot;&quot;x ]; then
 	repo init -u &quot;https://github.com/open-estuary/estuary.git&quot; -b refs/tags/$VERSION --no-repo-verify --repo-url=git://android.git.linaro.org/tools/repo
@@ -311,10 +320,57 @@ else
 	repo init -u &quot;https://github.com/open-estuary/estuary.git&quot; -b master --no-repo-verify --repo-url=git://android.git.linaro.org/tools/repo
 fi
 
-false; while [ $? -ne 0 ]; do repo sync; done
+false; while [ $? -ne 0 ]; do repo sync --force-sync ; done
 repo start master --all
 
-print_time &quot;the end time of finishing downloading  estuary is &quot;
+print_time &quot;the end time of finishing downloading estuary is &quot;
+
+############## execute estuary build #####################
+
+BUILD_CFG_FILE=/tmp/estuarycfg.json
+cp $ESTUARY_CFG_FILE $BUILD_CFG_FILE
+
+# Set all platforms support to &quot;no&quot;
+sed -i -e &apos;/platform/s/yes/no/&apos; $BUILD_CFG_FILE
+
+# Set all distros support to &quot;no&quot;
+distros=(Ubuntu Debian Fedora OpenSuse CentOS)
+for ((i=0; i&lt;${#distros[@]}; i++))
+do
+	sed -i -e &quot;/${distros[$i]}/s/yes/no/&quot; $BUILD_CFG_FILE
+done
+
+# Set all setup types support to &quot;no&quot;
+setuptypes=(iso usb pxe)
+for ((i=0; i&lt;${#setuptypes[@]}; i++))
+do
+	sed -i -e &quot;/${setuptypes[$i]}/s/yes/no/&quot; $BUILD_CFG_FILE
+done
+
+# Make platforms supported to &quot;yes&quot;
+echo $SHELL_PLATFORM
+for PLATFORM in $SHELL_PLATFORM
+do
+	sed -i -e &quot;/$PLATFORM/s/no/yes/&quot; $BUILD_CFG_FILE
+done
+
+# Make distros supported to &quot;yes&quot;
+echo $SHELL_DISTRO
+for DISTRO in $SHELL_DISTRO
+do
+	sed -i -e &quot;/$DISTRO/s/no/yes/&quot; $BUILD_CFG_FILE
+done
+
+cat $BUILD_CFG_FILE
+
+# Execute build
+./estuary/build.sh --file=$BUILD_CFG_FILE --builddir=$BUILD_DIR
+if [ $? -ne 0 ]; then
+	echo &quot;estuary build failed!&quot;
+	exit -1
+fi
+
+print_time &quot;the end time of estuary build is &quot;
 
 ############## get the GIT_DESCRIBE ######################
 if [ &quot;$VERSION&quot;x != &quot;&quot;x ]; then
@@ -322,22 +378,37 @@ if [ &quot;$VERSION&quot;x != &quot;&quot;x ]; then
 else
 	#### get uefi commit
 	pushd uefi
-	UEFI_GIT_DESCRIBE=&apos;uefi_&apos;$(git log --oneline | head -1 | awk &apos;{print $1}&apos;)
+	UEFI_GIT_DESCRIBE=$(git log --oneline | head -1 | awk &apos;{print $1}&apos;)
+    UEFI_GIT_DESCRIBE=uefi_${UEFI_GIT_DESCRIBE:0:7}
 	popd
 
 	#### get kernel commit
 	pushd kernel
-	KERNEL_GIT_DESCRIBE=&apos;kernel_&apos;$(git log --oneline | head -1 | awk &apos;{print $1}&apos;)
+	KERNEL_GIT_DESCRIBE=$(git log --oneline | head -1 | awk &apos;{print $1}&apos;)
+    KERNEL_GIT_DESCRIBE=kernel_${KERNEL_GIT_DESCRIBE:0:7}
 	popd
 
-	#### get grub commit 
+	#### get grub commit
 	pushd grub
-	GURB_GIT_DESCRIBE=&apos;grub_&apos;$(git log --oneline | head -1 | awk &apos;{print $1}&apos;)
+	GURB_GIT_DESCRIBE=$(git log --oneline | head -1 | awk &apos;{print $1}&apos;)
+    GURB_GIT_DESCRIBE=grub_${GURB_GIT_DESCRIBE:0:7}
 	popd
 
-	GIT_DESCRIBE=$UEFI_GIT_DESCRIBE&quot;_&quot;$GURB_GIT_DESCRIBE&quot;_&quot;$KERNEL_GIT_DESCRIBE
+	GIT_DESCRIBE=${UEFI_GIT_DESCRIBE}_${GURB_GIT_DESCRIBE}_${KERNEL_GIT_DESCRIBE}
 fi
-############## END of GIT_DESCRIBE ######################
+
+echo $GIT_DESCRIBE
+
+#################### copy build files to the $GIT_DESCRIBE directory ###########################
+DEPLOY_UTILS_FILE=deploy-utils.tar.bz2
+MINI_ROOTFS_FILE=mini-rootfs.cpio.gz
+GRUB_IMG_FILE=grubaa64.efi
+GRUB_CFG_FILE=grub.cfg
+KERNEL_IMG_FILE=Image
+TOOLCHAIN_FILE=gcc-linaro-aarch64-linux-gnu-4.9-2014.09_linux.tar.xz
+
+ls -l $BUILD_DIR
+pushd $BUILD_DIR  # enter BUILD_DIR
 
 if [ -d $GIT_DESCRIBE ]; then
 	sudo rm -fr $GIT_DESCRIBE
@@ -345,117 +416,85 @@ fi
 
 mkdir $GIT_DESCRIBE
 
-read -a arch &lt;&lt;&lt; $(echo $ARCH_MAP)
-declare -A dict
-for((i=0; i&lt;${#arch[@]}; i++))
+read -a arch_map &lt;&lt;&lt; $(echo $ARCH_MAP)
+declare -A arch
+for((i=0; i&lt;${#arch_map[@]}; i++))
 do
     if ((i%2==0)); then
         j=`expr $i+1`
-        dict[${arch[$i]}]=${arch[$j]}
-    fi      
+        arch[${arch_map[$i]}]=${arch_map[$j]}
+    fi
 done
-
-# unset HOST variable to fix acpica compile error for the first build
-HOST_BAK=$HOST
-unset HOST
-
-echo $SHELL_PLATFORM
-echo $SHELL_DISTRO
 
 for PLATFORM in $SHELL_PLATFORM
 do
-	echo $PLATFORM
+    echo $PLATFORM
+
+    if [ x&quot;$PLATFORM&quot; = x&quot;D02&quot; ]; then
+        sata_image_dir=sata_image
+        [ -d $sata_image_dir ] &amp;&amp; rm -fr $sata_image_dir
+        mkdir $sata_image_dir
+
+        build_image_for_sata $sata_image_dir
+        if [ x&quot;`ls -A $sata_image_dir`&quot; = x&quot;&quot; ]; then
+            echo &quot;xompiling the sata booting image error&quot;
+            exit -1
+        else
+            [ -d binary/$PLATFORM/$sata_image_dir ] &amp;&amp; rm -fr binary/$PLATFORM/$sata_image_dir
+            mv $sata_image_dir binary/$PLATFORM/
+        fi
+    fi
+
 	PLATFORM_L=&quot;$(echo $PLATFORM | tr &apos;[:upper:]&apos; &apos;[:lower:]&apos;)&quot;
-    echo ${dict[$PLATFORM_L]}
+    PLATFORM_ARCH_DIR=$GIT_DESCRIBE/${PLATFORM_L}-${arch[$PLATFORM_L]}
+    [ -d $PLATFORM_ARCH_DIR ] &amp;&amp; rm -fr $PLATFORM_ARCH_DIR
+    echo $PLATFORM_ARCH_DIR
 
-    DISTRO_DIR=$GIT_DESCRIBE/${PLATFORM_L}-${dict[$PLATFORM_L]}
-    [ -d $DISTRO_DIR ] &amp;&amp; rm -fr $DISTRO_DIR
-    mkdir -p $DISTRO_DIR
+    mkdir -p ${PLATFORM_ARCH_DIR}/{binary,toolchain,distro}
 
+    # copy binary files
+    sudo cp -fr binary/$PLATFORM/* $PLATFORM_ARCH_DIR/binary
+    sudo cp -f binary/${arch[$PLATFORM_L]}/$KERNEL_IMG_FILE $PLATFORM_ARCH_DIR/binary/${KERNEL_IMG_FILE}_${PLATFORM}
+    sudo cp -f binary/${arch[$PLATFORM_L]}/{$DEPLOY_UTILS_FILE,$MINI_ROOTFS_FILE,$GRUB_IMG_FILE,$GRUB_CFG_FILE} $PLATFORM_ARCH_DIR/binary
+
+    # copy toolchain files
+    sudo cp -f binary/${arch[$PLATFORM_L]}/$TOOLCHAIN_FILE $PLATFORM_ARCH_DIR/toolchain
+
+    # copy distro files
 	for DISTRO in $SHELL_DISTRO
     do
         echo $DISTRO
 
         pushd ${CI_SCRIPTS_DIR}/boot-app-scripts
-        plat_distros=`python parameter_parser.py -f config.yaml  -s DISTRO -k $PLATFORM`
-        distro_whole_name=`python parameter_parser.py -f config.yaml  -s DISTRO -k $PLATFORM -v $DISTRO`
+        distro_tar_name=`python parameter_parser.py -f config.yaml -s DISTRO -k $PLATFORM -v $DISTRO`
         popd
 
-        [[ ${plat_distros/$DISTRO//} == $plat_distros ]] &amp;&amp; continue
-
-		./estuary/build.sh -p $PLATFORM -d $DISTRO
-		if [ $? -ne 0 ]; then
-			exit -1
-		fi
-        
-     	 # delete the link file in the build/$PLATFORM
-     	 delete_file=$(ls -l ./build/$PLATFORM/binary | grep &quot;\-&gt;&quot; | awk &apos;{print $9}&apos;)
-     	 echo $delete_file
-      
-     	 declare -a del_arr
-    	 read -a del_arr &lt;&lt;&lt; $(echo $delete_file)
-      
-    	 for j in ${del_arr[@]}
-    	 do
-    	      sudo rm -fr ./build/$PLATFORM/binary/$j 
-   	  	 done
-      
-      	if [  x&quot;$PLATFORM&quot; = x&quot;D02&quot; ]; then
-        	sata_image_dir=sata_image
-        	[ -d $sata_image_dir ] &amp;&amp; rm -fr $sata_image_dir
-            mkdir $sata_image_dir
-        	build_image_for_sata   $sata_image_dir
-            if [ &quot;`ls -A $sata_image_dir`&quot; = &quot;&quot;  ]; then
-            	echo &quot;xompiling the sata booting image error&quot;
-                exit -1
-            else
-            	[ -d build/$PLATFORM/binary/$sata_image_dir ] &amp;&amp; rm -fr build/$PLATFORM/binary/$sata_image_dir
-            	mv $sata_image_dir build/$PLATFORM/binary
-            fi
-        fi
-      
-      	# move the build file to the $GIT_DESCRIBE file
-      	ls -l build
-        if [ ! -d $DISTRO_DIR/binary ]; then
-        	sudo cp -r build/$PLATFORM/binary  $DISTRO_DIR
-      	fi
-        
-      	if [ ! -d $DISTRO_DIR/toolchain ]; then
-      	  	sudo cp -r build/$PLATFORM/toolchain  $DISTRO_DIR
-      	fi
-        
-      	if [ ! -d $DISTRO_DIR/distro ]; then
-      		sudo mkdir -p $DISTRO_DIR/distro
-      	fi
-        
-      	sudo cp distro/${distro_whole_name}*  $DISTRO_DIR/distro
-        print_time &quot;the end time of building $DISTRO is &quot;
+        cd distro
+        echo $distro_tar_name
+        sudo md5sum $distro_tar_name &gt; ${distro_tar_name}.sum
+      	sudo cp -f ${distro_tar_name}* ../$PLATFORM_ARCH_DIR/distro
+        cd -
     done
-    
-    print_time &quot;the end time of building for $PLATFORM is &quot;
-    
-    DES_DIR=$FTP_DIR/$TREE_NAME/$GIT_DESCRIBE/
-    [ ! -d $DES_DIR ] &amp;&amp; sudo mkdir -p $DES_DIR
-    
-    sudo cp -rf $GIT_DESCRIBE/* $DES_DIR
-    [ $? -ne 0 ] &amp;&amp; exit -1
-    
-    ls -l $GIT_DESCRIBE
-	sudo rm -fr $GIT_DESCRIBE
 done
 
-HOST=$HOST_BAK    # restore HOST variable
+DES_DIR=$FTP_DIR/$TREE_NAME/$GIT_DESCRIBE/
+[ ! -d $DES_DIR ] &amp;&amp; sudo mkdir -p $DES_DIR
+
+sudo cp -rf $GIT_DESCRIBE/* $DES_DIR
+[ $? -ne 0 ] &amp;&amp; exit -1
+
+ls -lR $GIT_DESCRIBE
+sudo rm -fr $GIT_DESCRIBE
+rm -fr build
+
+popd  # leave BUILD_DIR
 
 sudo cp -rf $timefile $DES_DIR
-sudo rm -fr $timefile
-#sudo rm -fr build
+#sudo rm -fr $timefile
 
-popd    # restore current work directory
+popd  # leave OPEN_ESTUARY_DIR
 
-# push the binary files to the ftpserver
-#sudo python ${CI_SCRIPTS_DIR}/boot-app-scripts/publish.py -j open-estuary -p $PLATFORM -d ./$GIT_DESCRIBE
-
-echo $GIT_DESCRIBE
+################### save env variables #############################
 cat &lt;&lt; EOF &gt; ${WORKSPACE}/env.properties
 GIT_DESCRIBE=$GIT_DESCRIBE
 SHELL_PLATFORM=$SHELL_PLATFORM
@@ -476,16 +515,51 @@ TFTP_DIR=$TFTP_DIR
 EOF
 
 cat ${WORKSPACE}/env.properties
+
 </command>
     </hudson.tasks.Shell>
   </builders>
   <publishers>
-    <hudson.tasks.Mailer plugin="mailer@1.17">
-      <recipients>wuyanjun1027@163.com  fanghuangcai@163.com</recipients>
-      <dontNotifyEveryUnstableBuild>false</dontNotifyEveryUnstableBuild>
-      <sendToIndividuals>false</sendToIndividuals>
-    </hudson.tasks.Mailer>
-    <hudson.plugins.parameterizedtrigger.BuildTrigger plugin="parameterized-trigger@2.30">
+    <hudson.plugins.emailext.ExtendedEmailPublisher plugin="email-ext@2.44">
+      <recipientList>1124281517@qq.com, fanghuangcai@163.com,  shuangshengchen@qq.com, gu_an_he@163.com, chenshuangsheng@huawei.com, lixiaoping3@huawei.com, zhaojunhua@hisilicon.com, wu.wu@hisilicon.com</recipientList>
+      <configuredTriggers>
+        <hudson.plugins.emailext.plugins.trigger.FailureTrigger>
+          <email>
+            <subject>$PROJECT_DEFAULT_SUBJECT</subject>
+            <body>$PROJECT_DEFAULT_CONTENT</body>
+            <recipientProviders>
+              <hudson.plugins.emailext.plugins.recipients.DevelopersRecipientProvider/>
+              <hudson.plugins.emailext.plugins.recipients.ListRecipientProvider/>
+            </recipientProviders>
+            <attachmentsPattern></attachmentsPattern>
+            <attachBuildLog>false</attachBuildLog>
+            <compressBuildLog>false</compressBuildLog>
+            <replyTo>$PROJECT_DEFAULT_REPLYTO</replyTo>
+            <contentType>project</contentType>
+          </email>
+        </hudson.plugins.emailext.plugins.trigger.FailureTrigger>
+      </configuredTriggers>
+      <contentType>text/plain</contentType>
+      <defaultSubject>[CI-OBSERVATION] Open-Estuary build $BUILD_STATUS</defaultSubject>
+      <defaultContent>project name: $PROJECT_NAME
+Version: ${GIT_DESCRIBE}
+Buils Status: $BUILD_STATUS
+Trigger Reason: ${CAUSE}
+The Build Log Address: ${BUILD_URL}console
+The Build Address: $BUILD_URL
+The Build Binaries Address: http://114.119.4.74:8083/${PROJECT_NAME}/${GIT_DESCRIBE}
+
+cat $timefile</defaultContent>
+      <attachmentsPattern>timestamp.log</attachmentsPattern>
+      <presendScript>$DEFAULT_PRESEND_SCRIPT</presendScript>
+      <postsendScript>$DEFAULT_POSTSEND_SCRIPT</postsendScript>
+      <attachBuildLog>false</attachBuildLog>
+      <compressBuildLog>false</compressBuildLog>
+      <replyTo>$DEFAULT_REPLYTO</replyTo>
+      <saveOutput>false</saveOutput>
+      <disabled>false</disabled>
+    </hudson.plugins.emailext.ExtendedEmailPublisher>
+    <hudson.plugins.parameterizedtrigger.BuildTrigger plugin="parameterized-trigger@2.31">
       <configs>
         <hudson.plugins.parameterizedtrigger.BuildTriggerConfig>
           <configs>
@@ -505,6 +579,7 @@ cat ${WORKSPACE}/env.properties
     </hudson.plugins.parameterizedtrigger.BuildTrigger>
   </publishers>
   <buildWrappers>
-    <hudson.plugins.timestamper.TimestamperBuildWrapper plugin="timestamper@1.8.2"/>
+    <hudson.plugins.timestamper.TimestamperBuildWrapper plugin="timestamper@1.8.3"/>
   </buildWrappers>
 </project>
+

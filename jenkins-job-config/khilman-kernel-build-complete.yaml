@@ -30,16 +30,6 @@
             default: 'No Results'
     disabled: false
     display-name: 'khilman - Kernel build complete'
-    scm:
-        - git:
-            url:  https://github.com/open-estuary/ci-scripts.git
-            refspec: +refs/heads/master:refs/remotes/origin/master
-            name: origin
-            branches:
-                - openlab2.0
-            basedir: local/ci-scripts
-            skip-tag: true
-            wipe-workspace: false
     wrappers:
         - timestamps
         - inject-ownership-variables:
@@ -48,7 +38,16 @@
     builders:
         - shell: |
             #!/bin/bash
+            set -x
 
+            # local copy of build scripts
+            if [ ! -d local ]; then
+                mkdir -p local
+                (cd local; git clone https://github.com/open-estuary/ci-scripts.git -b openlab2.0)
+            fi
+
+            (cd local/ci-scripts; git pull)
+            cd ${WORKSPACE}
             bash -x ./local/ci-scripts/jenkins-helper-script/common/kernelci-build/build-complete.sh
     publishers:
         - trigger-parameterized-builds:

@@ -72,7 +72,7 @@
             "parameters": {
                 "testdef_repos": [
                     {
-                        "git-repo": "https://github.com/joyxu/lava-test-definitions.git",
+                        "git-repo": "https://git.linaro.org/qa/test-definitions.git",
                         "testdef": "ubuntu/lkp.yaml"
                     }
                 ],

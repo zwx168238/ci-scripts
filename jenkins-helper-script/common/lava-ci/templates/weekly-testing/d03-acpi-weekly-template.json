@@ -34,12 +34,39 @@
 		"testdef_repos": [
 		  {
 			"git-repo": "git://git.linaro.org/qa/test-definitions.git",
-			"testdef": "ubuntu/device-tree.yaml"
+			"testdef": "ubuntu/acpi-smoke-test.yaml"
 		  }
 		],
 		"timeout": 172800
 	  }
 	},
+
+	{
+	  "command": "lava_test_shell",
+	  "parameters": {
+		"testdef_repos": [
+		  {
+			"git-repo": "git://git.linaro.org/qa/test-definitions.git",
+			"testdef": "ubuntu/acpica-tools.yaml"
+		  }
+		],
+		"timeout": 172800
+	  }
+	},
+
+	{
+	  "command": "lava_test_shell",
+	  "parameters": {
+		"testdef_repos": [
+		  {
+			"git-repo": "git://git.linaro.org/qa/test-definitions.git",
+			"testdef": "ubuntu/acpica.yaml"
+		  }
+		],
+		"timeout": 172800
+	  }
+	},
+
         {
             "command": "lava_test_shell",
             "parameters": {
@@ -120,6 +147,7 @@
 				"timeout": 172800
 		}
 	},
+
 	{
 		"command": "lava_test_shell",
 		"parameters": {
@@ -132,20 +160,8 @@
 				"timeout": 172800
 		}
 	},
-	{
-		"command": "lava_test_shell",
-		"parameters": {
-			"testdef_repos": [
-			{
-				"git-repo": "https://github.com/joyxu/lava-test-definitions",
-				"testdef": "ubuntu/autotest-bonnie-test.yaml"
-			}
-			],
-				"timeout": 172800
-		}
-	},
 
-        {
+	{
             "command": "lava_test_shell",
             "parameters": {
                 "testdef_repos": [
@@ -157,6 +173,23 @@
                 "timeout": 172800
             }
         },
+
+	{
+		"command": "lava_test_shell",
+		"parameters": {
+			"testdef_repos": [
+			{
+				"git-repo": "https://git.linaro.org/qa/test-definitions.git",
+				"parameters": {
+					"PARTITION": "/dev/sda2"
+				},
+				"testdef": "common/dd-speed-test.yaml"
+			}
+			],
+				"timeout": 172800
+		}
+	},
+
 	{
 	  "command": "lava_test_shell",
 	  "parameters": {
@@ -169,6 +202,7 @@
 		"timeout": 172800
 	  }
 	},
+
 	{
 	  "command": "lava_test_shell",
 	  "parameters": {
@@ -181,7 +215,7 @@
 		"timeout": 172800
 	  }
 	},
-        
+
 	{
 		"command": "lava_test_shell",
 		"parameters": {
@@ -214,6 +248,7 @@
 				"timeout": 172800
 		}
 	},
+
         {
             "command": "lava_test_shell",
             "parameters": {
@@ -221,6 +256,19 @@
                     {
                         "git-repo": "http://git.linaro.org/qa/test-definitions.git",
                         "testdef": "ubuntu/kselftest-net.yaml"
+                    }
+                ],
+                "timeout": 172800
+            }
+        },
+
+        {
+            "command": "lava_test_shell",
+            "parameters": {
+                "testdef_repos": [
+                    {
+                        "git-repo": "http://git.linaro.org/qa/test-definitions.git",
+                        "testdef": "ubuntu/ltp-network.yaml"
                     }
                 ],
                 "timeout": 172800

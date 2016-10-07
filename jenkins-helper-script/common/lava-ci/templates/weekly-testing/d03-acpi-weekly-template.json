@@ -99,18 +99,6 @@
             "parameters": {
                 "testdef_repos": [
                     {
-                        "git-repo": "https://git.linaro.org/qa/test-definitions.git",
-                        "testdef": "ubuntu/lkp.yaml"
-                    }
-                ],
-                "timeout": 172800
-            }
-        },
-        {
-            "command": "lava_test_shell",
-            "parameters": {
-                "testdef_repos": [
-                    {
                         "git-repo": "http://git.linaro.org/qa/test-definitions.git",
                         "testdef": "ubuntu/sysbench.yaml"
                     }

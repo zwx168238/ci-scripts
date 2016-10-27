@@ -33,7 +33,7 @@
         <hudson.model.StringParameterDefinition>
           <name>ARCH_MAP</name>
           <description></description>
-          <defaultValue>d03 arm64 d02 arm64</defaultValue>
+          <defaultValue>d02 arm64 d03 arm64</defaultValue>
         </hudson.model.StringParameterDefinition>
         <hudson.model.StringParameterDefinition>
           <name>BOOT_PLAN</name>
@@ -104,6 +104,16 @@
           <name>VERSION</name>
           <description></description>
           <defaultValue></defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>PACKAGES</name>
+          <description></description>
+          <defaultValue>armor lamp mysql odp docker docker_apps</defaultValue>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>SETUP_TYPE</name>
+          <description></description>
+          <defaultValue>iso usb pxe</defaultValue>
         </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
     </hudson.model.ParametersDefinitionProperty>
@@ -306,13 +316,10 @@ fi
 
 pushd $OPEN_ESTUARY_DIR;    # enter OPEN_ESTUARY_DIR
 
-# remove link file in distro
-find distro/ -type l -exec rm {} \;
-
 # sync and checkout files from repo
+repo abandon master
 repo forall -c git reset --hard
 repo forall -c git clean -dxf
-#repo abandon master
 
 if [ &quot;$VERSION&quot;x != &quot;&quot;x ]; then
 	repo init -u &quot;https://github.com/open-estuary/estuary.git&quot; -b refs/tags/$VERSION --no-repo-verify --repo-url=git://android.git.linaro.org/tools/repo
@@ -320,8 +327,9 @@ else
 	repo init -u &quot;https://github.com/open-estuary/estuary.git&quot; -b master --no-repo-verify --repo-url=git://android.git.linaro.org/tools/repo
 fi
 
-false; while [ $? -ne 0 ]; do repo sync --force-sync ; done
+false; while [ $? -ne 0 ]; do repo sync --force-sync --fetch-submodules; done
 repo start master --all
+repo status
 
 print_time &quot;the end time of finishing downloading estuary is &quot;
 
@@ -333,20 +341,6 @@ cp $ESTUARY_CFG_FILE $BUILD_CFG_FILE
 # Set all platforms support to &quot;no&quot;
 sed -i -e &apos;/platform/s/yes/no/&apos; $BUILD_CFG_FILE
 
-# Set all distros support to &quot;no&quot;
-distros=(Ubuntu Debian Fedora OpenSuse CentOS)
-for ((i=0; i&lt;${#distros[@]}; i++))
-do
-	sed -i -e &quot;/${distros[$i]}/s/yes/no/&quot; $BUILD_CFG_FILE
-done
-
-# Set all setup types support to &quot;no&quot;
-setuptypes=(iso usb pxe)
-for ((i=0; i&lt;${#setuptypes[@]}; i++))
-do
-	sed -i -e &quot;/${setuptypes[$i]}/s/yes/no/&quot; $BUILD_CFG_FILE
-done
-
 # Make platforms supported to &quot;yes&quot;
 echo $SHELL_PLATFORM
 for PLATFORM in $SHELL_PLATFORM
@@ -354,11 +348,32 @@ do
 	sed -i -e &quot;/$PLATFORM/s/no/yes/&quot; $BUILD_CFG_FILE
 done
 
+# Set all distros support to &quot;no&quot;
+distros=(Ubuntu OpenSuse Fedora Debian CentOS Rancher)
+for ((i=0; i&lt;${#distros[@]}; i++))
+do
+	sed -i -e &quot;/${distros[$i]}/s/yes/no/&quot; $BUILD_CFG_FILE
+done
+
 # Make distros supported to &quot;yes&quot;
 echo $SHELL_DISTRO
 for DISTRO in $SHELL_DISTRO
 do
 	sed -i -e &quot;/$DISTRO/s/no/yes/&quot; $BUILD_CFG_FILE
+done
+
+# Set all packages supported to yes
+echo $PACKAGES
+for package in $PACKAGES
+do
+	sed -i -e &quot;/${package}/s/no/yes/&quot; $BUILD_CFG_FILE
+done
+
+# Set all setup types supported to &quot;no&quot;
+echo $SETUP_TYPE
+for setuptype in $SETUP_TYPE
+do
+	sed -i -e &quot;/${setuptype}/s/yes/no/&quot; $BUILD_CFG_FILE
 done
 
 cat $BUILD_CFG_FILE
@@ -407,14 +422,11 @@ GRUB_CFG_FILE=grub.cfg
 KERNEL_IMG_FILE=Image
 TOOLCHAIN_FILE=gcc-linaro-aarch64-linux-gnu-4.9-2014.09_linux.tar.xz
 
-ls -l $BUILD_DIR
-pushd $BUILD_DIR  # enter BUILD_DIR
+DES_DIR=$FTP_DIR/$TREE_NAME/$GIT_DESCRIBE
+[ -d $DES_DIR ] &amp;&amp; sudo rm -rf $DES_DIR
+sudo mkdir -p $DES_DIR
 
-if [ -d $GIT_DESCRIBE ]; then
-	sudo rm -fr $GIT_DESCRIBE
-fi
-
-mkdir $GIT_DESCRIBE
+sudo cp $timefile $DES_DIR
 
 read -a arch_map &lt;&lt;&lt; $(echo $ARCH_MAP)
 declare -A arch
@@ -426,6 +438,19 @@ do
     fi
 done
 
+ls -l $BUILD_DIR
+pushd $BUILD_DIR  # enter BUILD_DIR
+
+# copy arch files
+pushd binary
+for arch_dir in arm*;
+do
+    sudo mkdir -p $DES_DIR/$arch_dir
+    sudo cp $arch_dir/* $DES_DIR/$arch_dir
+done
+popd
+
+# copy platfom files
 for PLATFORM in $SHELL_PLATFORM
 do
     echo $PLATFORM
@@ -437,7 +462,7 @@ do
 
         build_image_for_sata $sata_image_dir
         if [ x&quot;`ls -A $sata_image_dir`&quot; = x&quot;&quot; ]; then
-            echo &quot;xompiling the sata booting image error&quot;
+            echo &quot;compiling the sata booting image error&quot;
             exit -1
         else
             [ -d binary/$PLATFORM/$sata_image_dir ] &amp;&amp; rm -fr binary/$PLATFORM/$sata_image_dir
@@ -446,19 +471,26 @@ do
     fi
 
 	PLATFORM_L=&quot;$(echo $PLATFORM | tr &apos;[:upper:]&apos; &apos;[:lower:]&apos;)&quot;
-    PLATFORM_ARCH_DIR=$GIT_DESCRIBE/${PLATFORM_L}-${arch[$PLATFORM_L]}
-    [ -d $PLATFORM_ARCH_DIR ] &amp;&amp; rm -fr $PLATFORM_ARCH_DIR
-    echo $PLATFORM_ARCH_DIR
-
-    mkdir -p ${PLATFORM_ARCH_DIR}/{binary,toolchain,distro}
-
-    # copy binary files
-    sudo cp -fr binary/$PLATFORM/* $PLATFORM_ARCH_DIR/binary
-    sudo cp -f binary/${arch[$PLATFORM_L]}/$KERNEL_IMG_FILE $PLATFORM_ARCH_DIR/binary/${KERNEL_IMG_FILE}_${PLATFORM}
-    sudo cp -f binary/${arch[$PLATFORM_L]}/{$DEPLOY_UTILS_FILE,$MINI_ROOTFS_FILE,$GRUB_IMG_FILE,$GRUB_CFG_FILE} $PLATFORM_ARCH_DIR/binary
+    PLATFORM_ARCH_DIR=$DES_DIR/${PLATFORM_L}-${arch[$PLATFORM_L]}
+    [ -d $PLATFORM_ARCH_DIR ] &amp;&amp; sudo rm -fr $PLATFORM_ARCH_DIR
+    sudo mkdir -p ${PLATFORM_ARCH_DIR}/{binary,toolchain,distro}
 
     # copy toolchain files
-    sudo cp -f binary/${arch[$PLATFORM_L]}/$TOOLCHAIN_FILE $PLATFORM_ARCH_DIR/toolchain
+    pushd $PLATFORM_ARCH_DIR/toolchain
+    sudo ln -s ../../${arch[$PLATFORM_L]}/$TOOLCHAIN_FILE
+    popd
+
+    # copy binary files
+    sudo find binary/$PLATFORM/ -type l -exec rm {} \; # remove symlinks
+    sudo cp -rf binary/$PLATFORM/* $PLATFORM_ARCH_DIR/binary
+
+    pushd $PLATFORM_ARCH_DIR/binary
+    sudo ln -s ../../${arch[$PLATFORM_L]}/$KERNEL_IMG_FILE ${KERNEL_IMG_FILE}_${PLATFORM}
+    sudo ln -s ../../${arch[$PLATFORM_L]}/$DEPLOY_UTILS_FILE
+    sudo ln -s ../../${arch[$PLATFORM_L]}/$MINI_ROOTFS_FILE
+    sudo ln -s ../../${arch[$PLATFORM_L]}/$GRUB_IMG_FILE
+    sudo ln -s ../../${arch[$PLATFORM_L]}/$GRUB_CFG_FILE
+    popd
 
     # copy distro files
 	for DISTRO in $SHELL_DISTRO
@@ -469,28 +501,25 @@ do
         distro_tar_name=`python parameter_parser.py -f config.yaml -s DISTRO -k $PLATFORM -v $DISTRO`
         popd
 
-        cd distro
+        if [ x&quot;$distro_tar_name&quot; = x&quot;&quot; ]; then
+        	continue
+        fi
+
         echo $distro_tar_name
-        sudo md5sum $distro_tar_name &gt; ${distro_tar_name}.sum
-      	sudo cp -f ${distro_tar_name}* ../$PLATFORM_ARCH_DIR/distro
-        cd -
+
+        pushd $DES_DIR/${arch[$PLATFORM_L]}
+        [ ! -f ${distro_tar_name}.sum ] &amp;&amp; sudo sh -c &quot;md5sum $distro_tar_name &gt; ${distro_tar_name}.sum&quot;
+        popd
+
+        pushd $PLATFORM_ARCH_DIR/distro
+        sudo ln -s ../../${arch[$PLATFORM_L]}/$distro_tar_name
+        sudo ln -s ../../${arch[$PLATFORM_L]}/$distro_tar_name.sum
+        popd
     done
 done
 
-DES_DIR=$FTP_DIR/$TREE_NAME/$GIT_DESCRIBE/
-[ ! -d $DES_DIR ] &amp;&amp; sudo mkdir -p $DES_DIR
-
-sudo cp -rf $GIT_DESCRIBE/* $DES_DIR
-[ $? -ne 0 ] &amp;&amp; exit -1
-
-ls -lR $GIT_DESCRIBE
-sudo rm -fr $GIT_DESCRIBE
-rm -fr build
-
 popd  # leave BUILD_DIR
-
-sudo cp -rf $timefile $DES_DIR
-#sudo rm -fr $timefile
+sudo rm -fr $BUILD_DIR
 
 popd  # leave OPEN_ESTUARY_DIR
 
@@ -538,19 +567,35 @@ cat ${WORKSPACE}/env.properties
             <contentType>project</contentType>
           </email>
         </hudson.plugins.emailext.plugins.trigger.FailureTrigger>
+        <hudson.plugins.emailext.plugins.trigger.AbortedTrigger>
+          <email>
+            <subject>$PROJECT_DEFAULT_SUBJECT</subject>
+            <body>$PROJECT_DEFAULT_CONTENT</body>
+            <recipientProviders>
+              <hudson.plugins.emailext.plugins.recipients.DevelopersRecipientProvider/>
+              <hudson.plugins.emailext.plugins.recipients.ListRecipientProvider/>
+            </recipientProviders>
+            <attachmentsPattern></attachmentsPattern>
+            <attachBuildLog>false</attachBuildLog>
+            <compressBuildLog>false</compressBuildLog>
+            <replyTo>$PROJECT_DEFAULT_REPLYTO</replyTo>
+            <contentType>project</contentType>
+          </email>
+        </hudson.plugins.emailext.plugins.trigger.AbortedTrigger>
       </configuredTriggers>
       <contentType>text/plain</contentType>
-      <defaultSubject>[CI-OBSERVATION] Open-Estuary build $BUILD_STATUS</defaultSubject>
-      <defaultContent>project name: $PROJECT_NAME
+      <defaultSubject>Estuary Build - ${GIT_DESCRIBE} - ${BUILD_STATUS}</defaultSubject>
+      <defaultContent>project name: ${PROJECT_NAME}
 Version: ${GIT_DESCRIBE}
-Buils Status: $BUILD_STATUS
+Buils Status: ${BUILD_STATUS}
 Trigger Reason: ${CAUSE}
 The Build Log Address: ${BUILD_URL}console
 The Build Address: $BUILD_URL
-The Build Binaries Address: http://114.119.4.74:8083/${PROJECT_NAME}/${GIT_DESCRIBE}
+The Build Binaries Address: http://114.119.4.74:8083/open-estuary/${GIT_DESCRIBE}
 
-cat $timefile</defaultContent>
-      <attachmentsPattern>timestamp.log</attachmentsPattern>
+Test timestamp is below:
+${FILE,path=&quot;timestamp.log&quot;}</defaultContent>
+      <attachmentsPattern></attachmentsPattern>
       <presendScript>$DEFAULT_PRESEND_SCRIPT</presendScript>
       <postsendScript>$DEFAULT_POSTSEND_SCRIPT</postsendScript>
       <attachBuildLog>false</attachBuildLog>

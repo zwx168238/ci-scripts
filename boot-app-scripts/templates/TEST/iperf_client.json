@@ -1,6 +1,6 @@
 {
     "actions": [
-        {   
+        {
             "command": "dummy_deploy",
             "metadata": {
                 "image.type": "{image_type}",
@@ -14,25 +14,24 @@
             },
             "parameters": {
                 "target_type": "ubuntu"
-            }   
+            }
         },
         {
             "command": "lava_test_shell",
             "parameters": {
                 "testdef_repos": [
-                    {
-                        "git-repo": "https://github.com/joyxu/lava-test-definitions",
-                        "parameters": {
-                            "LEN": "16K",
-                            "REMOTE_IP": "192.168.1.106"
-                        },
-                        "testdef": "ubuntu/iperf-client.yaml"
-                    }
+                        {
+                            "git-repo": "https://github.com/joyxu/lava-test-definitions",
+                            "parameters": {
+                                "LEN": "16K",
+                                "REMOTE_IP": "192.168.1.106"
+                            },
+                            "testdef": "ubuntu/iperf-client.yaml"
+                        }
                     ],
-                    "timeout": 172800
+                    "timeout": 7200
             }
         },
-        
         {
             "command": "submit_results",
             "parameters": {
@@ -45,5 +44,5 @@
     "job_name": "{job_name}",
     "logging_level": "DEBUG",
     "priority": "high",
-    "timeout": 172800
+    "timeout": 7200
 }

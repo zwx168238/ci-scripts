@@ -40,5 +40,5 @@
     "job_name": "{job_name}_{nfs_distro}",
     "logging_level": "DEBUG",
     "priority": "high",
-    "timeout": 172800
+    "timeout": 7200
 }

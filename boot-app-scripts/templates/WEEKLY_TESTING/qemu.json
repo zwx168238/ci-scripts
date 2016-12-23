@@ -26,7 +26,7 @@
                     "testdef": "distro/{nfs_distro}/{nfs_distro}_qemu.yaml"
                 }
             ],
-            "timeout": 172800
+            "timeout": 7200
             }
         },
         {
@@ -42,5 +42,5 @@
     "job_name": "{job_name}-{nfs_distro}",
     "logging_level": "DEBUG",
     "priority": "high",
-    "timeout": 172800
+    "timeout": 7200
 }

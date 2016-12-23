@@ -1,6 +1,6 @@
 {
     "actions": [
-        {   
+        {
             "command": "dummy_deploy",
             "metadata": {
                 "image.type": "{image_type}",
@@ -11,23 +11,23 @@
                 "kernel.defconfig": "{defconfig}",
                 "platform.fastboot": "{fastboot}",
                 "test.plan": "{test_plan}"
-            },
+            }
         },
-		{
-		  "command": "lava_test_shell",
-		  "parameters": {
-			"testdef_repos": [
-			  {
-				"git-repo": "git://github.com/wuyuer/lava-test-cases.git",
-				"parameters": {
-					"SKIPFILE": "skipfile-lsk-juno"
-				},
-				"testdef": "ubuntu/ltp.yaml"
-			  }
-			],
-			"timeout": 172800
-		  }
-		},
+        {
+          "command": "lava_test_shell",
+          "parameters": {
+            "testdef_repos": [
+                    {
+                        "git-repo": "git://github.com/wuyuer/lava-test-cases.git",
+                        "parameters": {
+                            "SKIPFILE": "skipfile-lsk-juno"
+                        },
+                        "testdef": "ubuntu/ltp.yaml"
+                    }
+                ],
+                "timeout": 7200
+            }
+        },
         {
             "command": "submit_results",
             "parameters": {
@@ -40,5 +40,5 @@
     "job_name": "{job_name}",
     "logging_level": "DEBUG",
     "priority": "high",
-    "timeout": 172800
+    "timeout": 7200
 }

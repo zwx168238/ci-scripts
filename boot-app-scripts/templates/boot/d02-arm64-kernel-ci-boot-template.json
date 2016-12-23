@@ -17,7 +17,7 @@
                 "dtb": "{dtb_url}",
                 "kernel": "{kernel_url}",
                 "bootloadertype": "uefi",
-                "target_type": "ubuntu"					
+                "target_type": "ubuntu"
             }
         },
         {
@@ -45,5 +45,5 @@
     "job_name": "{job_name}",
     "logging_level": "DEBUG",
     "priority": "high",
-    "timeout": 172800
+    "timeout": 7200
 }

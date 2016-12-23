@@ -1,6 +1,6 @@
 {
     "actions": [
-        {   
+        {
             "command": "dummy_deploy",
             "metadata": {
                 "image.type": "{image_type}",
@@ -11,7 +11,7 @@
                 "kernel.defconfig": "{defconfig}",
                 "platform.fastboot": "{fastboot}",
                 "test.plan": "{test_plan}"
-            },
+            }
         },
         {
             "command": "lava_test_shell",
@@ -19,14 +19,14 @@
                 "testdef_repos": [
                     {
                         "git-repo": "git://github.com/wuyuer/lava-test-cases.git",
-			"parameters": {
+                        "parameters": {
                             "DeviceID": "/dev/sda2"
                         },
 
                         "testdef": "ubuntu/fio-test.yaml"
                     }
                 ],
-                "timeout": 172800
+                "timeout": 7200
             }
         },
         {
@@ -41,5 +41,5 @@
     "job_name": "{job_name}",
     "logging_level": "DEBUG",
     "priority": "high",
-    "timeout": 172800
+    "timeout": 7200
 }

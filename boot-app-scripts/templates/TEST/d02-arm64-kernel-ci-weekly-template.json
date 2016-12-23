@@ -19,18 +19,18 @@
         {
             "command": "boot_linaro_image"
         },
-		{
-		  "command": "lava_test_shell",
-		  "parameters": {
-			"testdef_repos": [
-			  {
-				"git-repo": "git://github.com/wuyuer/lava-test-cases.git",
-				"testdef": "ubuntu/device-tree.yaml"
-			  }
-			],
-			"timeout": 172800
-		  }
-		},
+        {
+          "command": "lava_test_shell",
+          "parameters": {
+            "testdef_repos": [
+              {
+                "git-repo": "git://github.com/wuyuer/lava-test-cases.git",
+                "testdef": "ubuntu/device-tree.yaml"
+              }
+            ],
+            "timeout": 7200
+          }
+        },
         {
             "command": "lava_test_shell",
             "parameters": {
@@ -40,7 +40,7 @@
                         "testdef": "common/dt-selftests.yaml"
                     }
                 ],
-                "timeout": 172800
+                "timeout": 7200
             }
         },
         {
@@ -55,5 +55,5 @@
     "job_name": "{job_name}",
     "logging_level": "DEBUG",
     "priority": "high",
-    "timeout": 172800
+    "timeout": 7200
 }

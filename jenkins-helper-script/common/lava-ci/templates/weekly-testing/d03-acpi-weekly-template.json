@@ -288,6 +288,32 @@
             }
         },
 
+	{
+		"command": "lava_test_shell",
+		"parameters": {
+			"testdef_repos": [
+			{
+				"git-repo": "https://github.com/joyxu/linaro-test-definitions.git",
+				"testdef": "automated/linux/lmbench/lmbench-memory.yaml"
+			}
+			],
+			"timeout": 172800
+		}
+	},
+
+	{
+		"command": "lava_test_shell",
+		"parameters": {
+			"testdef_repos": [
+			{
+				"git-repo": "https://github.com/joyxu/linaro-test-definitions.git",
+				"testdef": "automated/linux/stream/stream-uniprocessor.yaml"
+			}
+			],
+			"timeout": 172800
+		}
+	},
+
         {
             "command": "submit_results",
             "parameters": {

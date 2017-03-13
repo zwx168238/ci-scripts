@@ -104,7 +104,7 @@ dummy_ssh = {'device_type': 'dummy_ssh',
 
 device_map = {'hip04-d01.dtb': [d01],
               'hip05-d02.dtb': [d02],
-              'hip06-d03.dtb': [d03],
+              'D03': [d03],
               'hisi-x5hd2-dkb.dtb': [hisi_x5hd2_dkb],
               #'qemu-arm-legacy': [qemu_arm],
               #'qemu-aarch64-legacy': [qemu_aarch64],
@@ -180,7 +180,7 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority,
 
     pubkey = get_pubkey()
     for platform in platform_list:
-        platform_name = platform.split('/')[-1]
+        platform_name = platform.split('/')[-1].partition('_')[-1]
         for device in device_map[platform_name]:
             device_type = device['device_type']
             device_templates = device['templates']
@@ -413,9 +413,8 @@ def walk_url(url, distro_url, plans=None, arch=None, targets=None,
             if 'Image' in name and 'arm64' in url:
                 kernel = url + name
                 base_url = url
-            if name.endswith('.dtb') and name in device_map:
-                if base_url and base_url in url:
-                    platform_list.append(url + name)
+            if name.startswith('Image') and name.partition('_')[2] in device_map:
+                platform_list.append(url + name)
         if 'distro' in name:
             distro_url = url + name
     if kernel is not None and base_url is not None:

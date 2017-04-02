@@ -11,6 +11,9 @@
                 "kernel.defconfig": "{defconfig}",
                 "platform.fastboot": "{fastboot}",
                 "test.plan": "{test_plan}"
+            },
+            "parameters": {
+                "target_type": "ubuntu"
             }
         },
         {

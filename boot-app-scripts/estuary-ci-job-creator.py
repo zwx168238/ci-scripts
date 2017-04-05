@@ -311,8 +311,8 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority,
 
                                         tmp = tmp.replace('{defconfig}', defconfig)
                                         tmp = tmp.replace('{fastboot}', str(fastboot).lower())
-                                        tmp = tmp.replace('{distro_name}', distro)
-                                        tmp = tmp.replace('{target_type}', distro)
+                                        tmp = tmp.replace('{distro_name}', str(distro).lower())
+                                        tmp = tmp.replace('{target_type}', str(distro).lower())
                                         if plan:
                                             tmp = tmp.replace('{test_plan}', plan)
                                         if test_suite:

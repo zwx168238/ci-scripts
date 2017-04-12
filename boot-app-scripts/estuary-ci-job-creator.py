@@ -312,7 +312,11 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority,
                                         tmp = tmp.replace('{defconfig}', defconfig)
                                         tmp = tmp.replace('{fastboot}', str(fastboot).lower())
                                         tmp = tmp.replace('{distro_name}', distro)
-                                        tmp = tmp.replace('{target_type}', str(distro).lower())
+                                        # add by zhaoshijie, lava doesn't support centos in its source code,cheat it
+                                        if 'boot' in plan or 'BOOT' in plan:
+                                            tmp = tmp.replace('{target_type}', 'ubuntu')
+                                        else
+                                            tmp = tmp.replace('{target_type}', str(distro).lower())
                                         tmp = tmp.replace('{device_type_upper}', str(device_type).upper())
                                         if plan:
                                             tmp = tmp.replace('{test_plan}', plan)

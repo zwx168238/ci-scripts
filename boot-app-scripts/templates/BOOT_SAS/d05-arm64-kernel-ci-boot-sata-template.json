@@ -37,7 +37,9 @@
                     "cp /etc/ssh/sshd_config /etc/ssh/sshd_config_bk",
                     "sed -i 's/^PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config",
                     "service ssh restart || systemctl restart sshd",
-                    "ifconfig || ip addr"
+                    "ifconfig || ip addr",
+		    "[[ 'CentOS' == $(cat /etc/redhat-release | awk '{print $1}') ]] && yum update -y",
+		    "[[ 'Ubuntu' == $(cat /etc/issue | awk '{print $1}') ]] && apt-get update -y"
                 ]
             }
         },

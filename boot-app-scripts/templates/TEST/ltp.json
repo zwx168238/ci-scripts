@@ -28,7 +28,7 @@
                         "testdef": "common/ltp.yaml"
                     }
                 ],
-                "timeout": 7200
+                "timeout": 14400
             }
         },
         {

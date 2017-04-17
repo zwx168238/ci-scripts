@@ -32,6 +32,7 @@
             "command": "lava_command_run",
             "parameters": {
                 "commands": [
+		    "[[ -n $(ps -ef | grep 'dhclient' | grep -v grep) ]] && kill -9 $(ps -ef | grep 'dhclient' | grep -v grep | awk '{print $2}')",
                     "test -d ~/.ssh || mkdir ~/.ssh",
                     "echo '{lava_worker_pubkey}'  >> ~/.ssh/authorized_keys",
                     "cp /etc/ssh/sshd_config /etc/ssh/sshd_config_bk",

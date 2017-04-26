@@ -1,7 +1,7 @@
 server {
 	listen  8083;
 	server_name  _;
-	root /var/www/images/kernel-ci/;
+  root /home/ubuntu/jenkins_workspace/workspace/estuary-build/local/images/kernel-ci/;
 	location / {
 		autoindex on;
 	}

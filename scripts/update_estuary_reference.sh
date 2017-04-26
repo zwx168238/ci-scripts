@@ -3,27 +3,30 @@ trap "exit 1" SIGINT SIGTERM
 
 # set default workspace , if don't run in jenkins
 WORKSPACE=${WORKSPACE:-$(pwd)}
+REFERENCE_PATH=${REFERENCE_PATH:-~/estuary_reference}
 
+cd ${WORKSPACE}
 ###################### prepare repo tool ######################
 if [ ! -e bin ]; then
     mkdir -p bin;
-    wget -c http://www.open-estuary.com/EstuaryDownloads/tools/repo -O bin/repo
-    chmod a+x bin/repo;
+    curl https://mirrors.tuna.tsinghua.edu.cn/git/git-repo -o bin/repo
+    # wget -c http://www.open-estuary.com/EstuaryDownloads/tools/repo -O bin/repo
 fi
+
+chmod a+x bin/repo;
+export REPO_URL='https://mirrors.tuna.tsinghua.edu.cn/git/git-repo/'
 
 export PATH=${WORKSPACE}/bin:$PATH;
 
 # sync
-mkdir -p ~/estuary_reference
-cd ~/estuary_reference
+mkdir -p ${REFERENCE_PATH}
+cd ${REFERENCE_PATH}
 
 if [ ! -d '.repo' ];then
     repo init -u "https://github.com/open-estuary/estuary.git" --mirror --no-repo-verify --repo-url=git://android.git.linaro.org/tools/repo
 fi
 
 set +e
-false; while [ $? -ne 0 ]; do repo sync --force-sync; done
+false; while [ $? -ne 0 ]; do repo sync; done
 set -e
 repo list
-
-print_time "the end time of finishing downloading estuary is "

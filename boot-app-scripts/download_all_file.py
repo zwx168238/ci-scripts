@@ -1,7 +1,7 @@
 
 # -*- coding: utf-8 -*-
-#                      
-#    E-mail    :    wu.wu@hisilicon.com 
+#
+#    E-mail    :    wu.wu@hisilicon.com
 #    Data      :    2016-03-02 17:26:17
 #    Desc      :
 
@@ -16,7 +16,7 @@ import subprocess
 parse_re = re.compile('href="([^./"?][^"?]*)"')
 def get_urlname(git_describe, job_tree, url, token):
     array = [url, job_tree, git_describe]
-    urlname = '/'.join(array) 
+    urlname = '/'.join(array)
     try:
         response = urllib2.urlopen(urlname, timeout=30).read()
     except URLError, e:
@@ -24,11 +24,11 @@ def get_urlname(git_describe, job_tree, url, token):
         return ''
     else:
         return urlname
-    
+
 address_list = []
 download_file = []
 def walk(url):
-    try: 
+    try:
         html = urllib2.urlopen(url, timeout=30).read()
     except IOError, e:
         print "error reading %s: %s" % (url, e)
@@ -62,7 +62,7 @@ def download(lists):
             print '%s download success' % item
         else:
             print '%s download failed' % item
-    
+
 if __name__ == "__main__":
     try:
         opts, args = getopt.getopt(sys.argv[1:], "d:j:u:t:")
@@ -71,7 +71,7 @@ if __name__ == "__main__":
         sys.exit(2)
     direc = ''
     job = ''
-    url = "http://192.168.1.108:8083"
+    url = "http://192.168.3.100:8083"
     token = "3eda8013-da37-42ea-b9a0-7a66badd1b68"
     for option, value in opts:
         if option == "-d":

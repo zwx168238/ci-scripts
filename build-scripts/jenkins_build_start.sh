@@ -4,6 +4,22 @@ function init_workspace() {
     mkdir -p ${WORKSPACE}
 }
 
+function init_env_params() {
+    WORK_DIR=${WORKSPACE}/local
+    CI_SCRIPTS_DIR=${WORK_DIR}/ci-scripts
+    CODE_REFERENCE=/home/ubuntu/estuary_reference
+}
+
+function init_build_env() {
+    LANG=C
+    PATH=${CI_SCRIPTS_DIR}/build-scripts:$PATH
+
+    CPU_NUM=$(cat /proc/cpuinfo | grep processor | wc -l)
+    OPEN_ESTUARY_DIR=${WORK_DIR}/open-estuary
+    BUILD_DIR=${OPEN_ESTUARY_DIR}/build
+    ESTUARY_CFG_FILE=${OPEN_ESTUARY_DIR}/estuary/estuarycfg.json
+}
+
 function init_input_params() {
     TREE_NAME=open-estuary
     SHELL_PLATFORM="D05"
@@ -13,11 +29,6 @@ function init_input_params() {
     APP_PLAN=""
     USER="yangyang"
     HOST="192.168.67.123"
-}
-
-function init_env_params() {
-    CI_SCRIPTS_DIR=${WORKSPACE}/local/ci-scripts
-    CODE_REFERENCE=/home/ubuntu/estuary_reference
 }
 
 function parse_params() {
@@ -73,17 +84,6 @@ EOF
 
 function show_properties() {
     cat ${WORKSPACE}/env.properties
-}
-
-function init_build_env() {
-    LANG=C
-    PATH=${WORKSPACE}/local/ci-scripts/build-scripts:$PATH
-
-    CPU_NUM=$(cat /proc/cpuinfo | grep processor | wc -l)
-    CI_SCRIPTS_DIR=${WORKSPACE}/local/ci-scripts
-    OPEN_ESTUARY_DIR=${WORKSPACE}/local/open-estuary
-    BUILD_DIR=${OPEN_ESTUARY_DIR}/build
-    ESTUARY_CFG_FILE=${OPEN_ESTUARY_DIR}/estuary/estuarycfg.json
 }
 
 function print_time()
@@ -327,15 +327,15 @@ function cp_image() {
 
 function main() {
     init_workspace
-    init_input_params
     init_env_params
+    init_build_env
+
+    init_input_params
+
     parse_params
     save_to_properties
     show_properties
 
-    init_build_env
-
-    init_timefile
     print_time "the begin time is "
 
     init_timefile

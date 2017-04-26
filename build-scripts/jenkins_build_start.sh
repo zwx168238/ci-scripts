@@ -86,9 +86,9 @@ function show_properties() {
     cat ${WORKSPACE}/env.properties
 }
 
-function print_time()
-{
-  echo  $@ `date "+%Y-%m-%d %H:%M:%S"` >> $timefile
+function print_time() {
+    init_timefile
+    echo  $@ `date "+%Y-%m-%d %H:%M:%S"` >> $timefile
 }
 
 function init_timefile() {
@@ -362,8 +362,6 @@ function main() {
     show_properties
 
     print_time "the begin time is "
-
-    init_timefile
     prepare_repo_tool
     prepare_gcc_tool
 

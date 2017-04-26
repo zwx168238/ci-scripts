@@ -1,4 +1,5 @@
 #!/bin/bash
+source env
 cd ${WORK_HOME}
 mkdir -p ${WORK_HOME}/jenkins_home
 chmod a+r ${WORK_HOME}/jenkins_home

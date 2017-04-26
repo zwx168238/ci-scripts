@@ -24,7 +24,6 @@ fi
 set +e
 false; while [ $? -ne 0 ]; do repo sync --force-sync; done
 set -e
-
-repo status
+repo list
 
 print_time "the end time of finishing downloading estuary is "

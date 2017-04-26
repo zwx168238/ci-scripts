@@ -122,6 +122,17 @@ function prepare_gcc_tool() {
     popd
 }
 
+function prepare_yaml_tool() {
+    dev_tools="python-yaml"
+
+    if ! (dpkg-query -l $dev_tools >/dev/null 2>&1); then
+        sudo apt-get update
+        if ! (sudo apt-get install -y --force-yes $dev_tools); then
+            return 1
+        fi
+    fi
+}
+
 function sync_code() {
     mkdir -p $OPEN_ESTUARY_DIR;
 
@@ -243,6 +254,7 @@ function get_version_info() {
 
     popd
 }
+
 
 function cp_image() {
     pushd $OPEN_ESTUARY_DIR;    # enter OPEN_ESTUARY_DIR

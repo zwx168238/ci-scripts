@@ -123,17 +123,6 @@ function prepare_repo_tool() {
     popd
 }
 
-function prepare_gcc_tool() {
-    pushd $WORK_DIR
-    if [ ! -e gcc-linaro ]; then
-        wget -c https://releases.linaro.org/15.02/components/toolchain/binaries/aarch64-linux-gnu/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu.tar.xz
-        mkdir gcc-linaro
-        tar -Jxf gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu.tar.xz -C gcc-linaro
-        export PATH=${WORK_DIR}/gcc-linaro/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu/bin:$PATH
-    fi
-    popd
-}
-
 function prepare_yaml_tool() {
     dev_tools="python-yaml"
 
@@ -375,7 +364,6 @@ function main() {
 
     print_time "the begin time is "
     prepare_repo_tool
-    prepare_gcc_tool
 
     sync_code
     do_build

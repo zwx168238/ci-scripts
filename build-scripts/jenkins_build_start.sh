@@ -114,7 +114,7 @@ function prepare_repo_tool() {
 function prepare_gcc_tool() {
     pushd $WORK_DIR
     if [ ! -e gcc-linaro ]; then
-        wget -q -c https://releases.linaro.org/15.02/components/toolchain/binaries/aarch64-linux-gnu/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu.tar.xz
+        wget -c https://releases.linaro.org/15.02/components/toolchain/binaries/aarch64-linux-gnu/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu.tar.xz
         mkdir gcc-linaro
         tar -Jxf gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu.tar.xz -C gcc-linaro
         export PATH=${WORK_DIR}/gcc-linaro/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu/bin:$PATH

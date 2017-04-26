@@ -29,6 +29,18 @@ function init_input_params() {
     APP_PLAN=""
     USER="yangyang"
     HOST="192.168.67.123"
+    LAVA_SERVER=""
+    LAVA_STREAM=""
+    LAVA_TOKEN=""
+    KERNELCI_SERVER=""
+    KERNELCI_TOKEN=""
+    FTP_SERVER=""
+    FTP_DIR="/var/www/images/kernel-ci"
+    TFTP_DIR="/var/lib/tftpboot"
+    VERSION=""
+    LAVA_USER=""
+    PACKAGES=""
+    SETUP_TYPE=""
 }
 
 function parse_params() {

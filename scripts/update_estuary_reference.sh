@@ -1,6 +1,9 @@
 #!/bin/bash -ex
 trap "exit 1" SIGINT SIGTERM
 
+# set default workspace , if don't run in jenkins
+WORKSPACE=${WORKSPACE:-$(pwd)}
+
 ###################### prepare repo tool ######################
 if [ ! -e bin ]; then
     mkdir -p bin;

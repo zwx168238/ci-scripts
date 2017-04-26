@@ -12,7 +12,9 @@ export PATH=${WORKSPACE}/bin:$PATH;
 # sync
 cd ~/estuary_reference
 
-repo init -u "https://github.com/open-estuary/estuary.git" --mirror --no-repo-verify --repo-url=git://android.git.linaro.org/tools/repo
+if [ -d '.repo' ];then
+    repo init -u "https://github.com/open-estuary/estuary.git" --mirror --no-repo-verify --repo-url=git://android.git.linaro.org/tools/repo
+fi
 
 false; while [ $? -ne 0 ]; do repo sync --force-sync; done
 repo status

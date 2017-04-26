@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 function init_workspace() {
-    WORKSPACE="~/estuary/WORKSPACE"
+    WORKSPACE=${WORKSPACE:-~/estuary/WORKSPACE}
     mkdir -p ${WORKSPACE}
 }
 

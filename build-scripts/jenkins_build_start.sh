@@ -101,12 +101,25 @@ function init_timefile() {
 }
 
 function prepare_repo_tool() {
+    pushd $WORK_DIR
     if [ ! -e bin ]; then
         mkdir -p bin;
         wget -c http://www.open-estuary.com/EstuaryDownloads/tools/repo -O bin/repo
         chmod a+x bin/repo;
     fi
-    export PATH=${WORKSPACE}/bin:$PATH;
+    export PATH=${WORK_DIR}/bin:$PATH;
+    popd
+}
+
+function prepare_gcc_tool() {
+    pushd $WORK_DIR
+
+    wget -q -c https://releases.linaro.org/15.02/components/toolchain/binaries/aarch64-linux-gnu/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu.tar.xz
+    mkdir gcc-linaro
+    tar -Jxf gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu.tar.xz -C gcc-linaro
+    export PATH=${WORK_DIR}/gcc-linaro/gcc-linaro-4.9-2015.02-3-x86_64_aarch64-linux-gnu/bin:$PATH
+
+    popd
 }
 
 function sync_code() {
@@ -340,6 +353,7 @@ function main() {
 
     init_timefile
     prepare_repo_tool
+    prepare_gcc_tool
 
     sync_code
     do_build

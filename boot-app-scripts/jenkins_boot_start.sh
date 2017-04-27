@@ -242,8 +242,7 @@ function download_all_distros() {
 
     for DISTRO in $SHELL_DISTRO; do
         for PLAT in $SHELL_PLATFORM; do
-            key=$(echo $PLAT | tr '[:upper:]' '[:lower:]')
-            board_arch=${dict[$key]}
+            board_arch=${dict[$PLAT]}
             URL_NAME=$FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}
             (
                 cd $TFTP_DIR

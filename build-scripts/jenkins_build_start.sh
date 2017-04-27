@@ -28,9 +28,9 @@ function init_build_env() {
 
 function clean_build() {
     if [ x"$SKIP_BUILD" = x"true" ];then
-        sudo rm -fr $BUILD_DIR
-    else
         :
+    else
+        sudo rm -fr $BUILD_DIR
     fi
 }
 

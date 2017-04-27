@@ -24,7 +24,7 @@ function download_distro() {
     popd
 }
 
-location=/targetNFS/ubuntu_for_deployment
+location=${NFS_DIR:-/targetNFS/ubuntu_for_deployment}
 distro_loc=./sys_setup/distro
 distro=$1
 download_url=$2

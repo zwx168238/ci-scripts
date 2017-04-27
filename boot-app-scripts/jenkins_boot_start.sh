@@ -36,6 +36,17 @@ function init_input_params() {
     # SETUP_TYPE=""
 }
 
+function prepare_tool() {
+    dev_tools="python-yaml python-keyring"
+
+    if ! (dpkg-query -l $dev_tools >/dev/null 2>&1); then
+        sudo apt-get update
+        if ! (sudo apt-get install -y --force-yes $dev_tools); then
+            return 1
+        fi
+    fi
+}
+
 
 function init_boot_env() {
     ESTUARY_DIR=estuary
@@ -473,6 +484,8 @@ function main() {
     init_boot_env
 
     init_input_params
+
+    prepare_tool
 
     init_timefile
     print_time "the begin time of boot test is "

@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 # export CODE_REFERENCE=""
-function build_option() {
+function init_build_option() {
     SKIP_BUILD=${SKIP_BUILD=-"false"}
     SKIP_CP_IMAGE=${SKIP_CP_IMAGE=-"false"}
 }
@@ -368,6 +368,7 @@ function cp_image() {
 }
 
 function main() {
+    init_build_option
     init_workspace
     init_env_params
     init_build_env

@@ -226,7 +226,7 @@ function download_tftp_images() {
 
 function parse_arch_map() {
     read -a arch <<< $(echo $ARCH_MAP)
-    declare -A dict
+    declare -A -g dict
     for((i=0; i<${#arch[@]}; i++)); do
         if ((i%2==0)); then
             j=`expr $i+1`

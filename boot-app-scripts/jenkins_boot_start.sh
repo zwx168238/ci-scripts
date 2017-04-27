@@ -231,7 +231,7 @@ function parse_arch_map() {
     done
 }
 
-function down_all_distros() {
+function download_all_distros() {
     SHELL_PLATFORM="$(echo $SHELL_PLATFORM | tr '[:upper:]' '[:lower:]')"
 
     for DISTRO in $SHELL_DISTRO;
@@ -478,8 +478,9 @@ function main() {
 
     ##### copy some files to the lava-server machine to support the boot process #####
     prepare_tftp_download_tools
+    download_tftp_images
     parse_arch_map
-    down_all_distros
+    download_all_distros
     clean_workspace
     print_time "the time of preparing all envireonment is "
     trigger_lava_build

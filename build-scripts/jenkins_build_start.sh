@@ -368,6 +368,8 @@ function cp_image() {
 }
 
 function main() {
+    prepare_yaml_tool
+
     init_build_option
     init_workspace
     init_env_params

@@ -26,6 +26,14 @@ function init_build_env() {
     ESTUARY_CFG_FILE=${OPEN_ESTUARY_DIR}/estuary/estuarycfg.json
 }
 
+function clean_build() {
+    if [ "$SKIP_BUILD" = "true" ];then
+        sudo rm -fr $BUILD_DIR
+    else
+        :
+    fi
+}
+
 function init_input_params() {
     TREE_NAME=open-estuary
     SHELL_PLATFORM="D05"
@@ -356,8 +364,6 @@ function cp_image() {
     done
 
     popd  # leave BUILD_DIR
-    sudo rm -fr $BUILD_DIR
-
     popd  # leave OPEN_ESTUARY_DIR
 }
 

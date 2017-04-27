@@ -37,8 +37,8 @@ function init_input_params() {
     KERNELCI_SERVER=""
     KERNELCI_TOKEN=""
     FTP_SERVER=""
-    FTP_DIR="/var/www/images/kernel-ci"
-    TFTP_DIR="/var/lib/tftpboot"
+    FTP_DIR=${FTP_DIR:-"${WORK_DIR}/images/kernel-ci"}
+    TFTP_DIR=${TFTP_DIR:-"${WORK_DIR}/tftpboot"}
     VERSION=""
     LAVA_USER=""
     PACKAGES=""

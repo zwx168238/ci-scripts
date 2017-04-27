@@ -190,7 +190,7 @@ function download_tftp_images() {
         done
 
         [ -d /home/$USER/${ESTUARY_CI_DIR} ] && sudo rm -fr /home/$USER/${ESTUARY_CI_DIR}
-        sudo mkdir /home/$USER/${ESTUARY_CI_DIR}
+        sudo mkdir -p /home/$USER/${ESTUARY_CI_DIR}
 
         if [[ ${SHELL_PLATFORM} =~ "D02" ]] || [[ ${SHELL_PLATFORM} =~ "d02" ]];then
 

@@ -62,7 +62,7 @@ def download(lists):
             print '%s download success' % item
         else:
             print '%s download failed' % item
-    
+
 if __name__ == "__main__":
     try:
         opts, args = getopt.getopt(sys.argv[1:], "d:j:u:t:")
@@ -71,7 +71,7 @@ if __name__ == "__main__":
         sys.exit(2)
     direc = ''
     job = ''
-    url = "http://192.168.1.108:8083"
+    url = "http://192.168.3.100:8083"
     token = "3eda8013-da37-42ea-b9a0-7a66badd1b68"
     for option, value in opts:
         if option == "-d":

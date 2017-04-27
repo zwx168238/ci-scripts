@@ -279,7 +279,7 @@ function get_version_info() {
 }
 
 
-:<<EOF
+: <<EOF
 image dir tree:
 .
 `-- kernel-ci

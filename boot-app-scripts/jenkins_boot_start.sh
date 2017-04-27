@@ -227,27 +227,26 @@ function download_tftp_images() {
 function parse_arch_map() {
     read -a arch <<< $(echo $ARCH_MAP)
     declare -A dict
-    for((i=0; i<${#arch[@]}; i++))
-    do
+    for((i=0; i<${#arch[@]}; i++)); do
         if ((i%2==0)); then
             j=`expr $i+1`
             dict[${arch[$i]}]=${arch[$j]}
         fi
     done
+
+    for key in "${!dict[@]}"; do echo "$dict - ${dict[$key]}"; done
 }
 
 function download_all_distros() {
     SHELL_PLATFORM="$(echo $SHELL_PLATFORM | tr '[:upper:]' '[:lower:]')"
 
-    for DISTRO in $SHELL_DISTRO;
-    do
-        for PLAT in $SHELL_PLATFORM;
-        do
+    for DISTRO in $SHELL_DISTRO; do
+        for PLAT in $SHELL_PLATFORM; do
             board_arch=${dict[$PLAT]}
             URL_NAME=$FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}
             (
                 cd $TFTP_DIR
-                sudo ./download_distros.sh $DISTRO $URL_NAME ${board_arch} $PLAT ${NFS_DIR}
+                sudo ./download_distros.sh ${DISTRO} ${URL_NAME} ${board_arch} ${PLAT} ${NFS_DIR}
             )
         done
     done

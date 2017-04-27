@@ -382,6 +382,7 @@ function main() {
     prepare_repo_tool
 
     sync_code
+    clean_build
     do_build
     get_version_info
     if [ $SKIP_CP_IMAGE = "false" ];then

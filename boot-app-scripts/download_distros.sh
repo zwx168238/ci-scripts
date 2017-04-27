@@ -9,7 +9,9 @@ function download_distro() {
     BOARD=$(echo $board | tr '[:lower:]' '[:upper:]')
     distro_def=${Distro}_$ARCH
     echo $distro_def
+    mkdir -p $location
     pushd $location
+    mkdir -p $distro_loc
     pushd $distro_loc
     [ ! -d $BOARD ] && mkdir $BOARD
     pushd $BOARD

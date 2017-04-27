@@ -157,8 +157,9 @@ function init_summaryfile() {
 }
 
 function prepare_tftp_download_tools() {
-    pushd ${CI_SCRIPTS_DIR}/boot-app-scripts    # change current work directory
+    mkdir -p $TFTP_DIR
 
+    pushd ${CI_SCRIPTS_DIR}/boot-app-scripts    # change current work directory
     test -d $GIT_DESCRIBE && rm -fr $GIT_DESCRIBE
 
     echo $TFTP_DIR

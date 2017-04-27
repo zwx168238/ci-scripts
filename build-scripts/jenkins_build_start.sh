@@ -279,6 +279,39 @@ function get_version_info() {
 }
 
 
+:<<EOF
+image dir tree:
+.
+`-- kernel-ci
+    `-- open-estuary
+        `-- uefi_b386a15_grub_daac831_kernel_6eade8c
+            |-- arm64
+            |   |-- Estuary.iso
+            |   |-- Image
+            |   |-- System.map
+            |   |-- Ubuntu_ARM64.tar.gz
+            |   |-- Ubuntu_ARM64.tar.gz.sum
+            |   |-- deploy-utils.tar.bz2
+            |   |-- gcc-linaro-aarch64-linux-gnu-4.9-2014.09_linux.tar.xz
+            |   |-- gcc-linaro-arm-linux-gnueabihf-4.9-2014.09_linux.tar.xz
+            |   |-- grubaa64.efi
+            |   |-- mini-rootfs.cpio.gz
+            |   `-- vmlinux
+            |-- d05-arm64
+            |   |-- binary
+            |   |   |-- Image_D05 -> ../../arm64/Image
+            |   |   |-- UEFI_D05.fd
+            |   |   |-- deploy-utils.tar.bz2 -> ../../arm64/deploy-utils.tar.bz2
+            |   |   |-- grub.cfg
+            |   |   |-- grubaa64.efi -> ../../arm64/grubaa64.efi
+            |   |   `-- mini-rootfs.cpio.gz -> ../../arm64/mini-rootfs.cpio.gz
+            |   |-- distro
+            |   |   |-- Ubuntu_ARM64.tar.gz -> ../../arm64/Ubuntu_ARM64.tar.gz
+            |   |   `-- Ubuntu_ARM64.tar.gz.sum -> ../../arm64/Ubuntu_ARM64.tar.gz.sum
+            |   `-- toolchain
+            |       `-- gcc-linaro-aarch64-linux-gnu-4.9-2014.09_linux.tar.xz -> ../../arm64/gcc-linaro-aarch64-linux-gnu-4.9-2014.09_linux.tar.xz
+            `-- timestamp.log
+EOF
 function cp_image() {
     pushd $OPEN_ESTUARY_DIR;    # enter OPEN_ESTUARY_DIR
 

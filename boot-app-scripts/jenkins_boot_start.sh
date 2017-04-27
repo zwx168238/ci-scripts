@@ -234,7 +234,7 @@ function parse_arch_map() {
         fi
     done
 
-    for key in "${!dict[@]}"; do echo "$dict - ${dict[$key]}"; done
+    for key in "${!dict[@]}"; do echo "$key - ${dict[$key]}"; done
 }
 
 function download_all_distros() {

@@ -1,8 +1,8 @@
 #!/bin/bash -ex
 # export CODE_REFERENCE=""
 function init_build_option() {
-    SKIP_BUILD=${SKIP_BUILD=-"false"}
-    SKIP_CP_IMAGE=${SKIP_CP_IMAGE=-"false"}
+    SKIP_BUILD=${SKIP_BUILD:-"false"}
+    SKIP_CP_IMAGE=${SKIP_CP_IMAGE:-"false"}
 }
 
 function init_workspace() {

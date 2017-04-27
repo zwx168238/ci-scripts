@@ -1,5 +1,9 @@
 #!/bin/bash -ex
 # export CODE_REFERENCE=""
+function build_option() {
+    SKIP_BUILD=${SKIP_BUILD=-"false"}
+    SKIP_CP_IMAGE=${SKIP_CP_IMAGE=-"false"}
+}
 
 function init_workspace() {
     WORKSPACE=${WORKSPACE:-~/estuary/WORKSPACE}
@@ -213,11 +217,15 @@ function do_build() {
 
     cat $BUILD_CFG_FILE
 
-    # Execute build
-    ./estuary/build.sh --file=$BUILD_CFG_FILE --builddir=$BUILD_DIR
-    if [ $? -ne 0 ]; then
-        echo "estuary build failed!"
-        exit -1
+    if [ "$SKIP_BUILD" = "true" ];then
+        echo "skip build"
+    else
+        # Execute build
+        ./estuary/build.sh --file=$BUILD_CFG_FILE --builddir=$BUILD_DIR
+        if [ $? -ne 0 ]; then
+            echo "estuary build failed!"
+            exit -1
+        fi
     fi
 
     print_time "the end time of estuary build is "
@@ -370,7 +378,9 @@ function main() {
     sync_code
     do_build
     get_version_info
-    cp_image
+    if [ $SKIP_CP_IMAGE = "false" ];then
+        cp_image
+    fi
     save_to_properties
 }
 

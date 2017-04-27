@@ -15,8 +15,8 @@ function init_input_params() {
     SHELL_PLATFORM="D05"
     SHELL_DISTRO="Ubuntu"
     ARCH_MAP="d05 arm64"
-    BOOT_PLAN=""
-    APP_PLAN=""
+    BOOT_PLAN="BOOT_NFS BOOT_SAS"
+    APP_PLAN="TEST"
     USER="yangyang"
     HOST="192.168.67.123"
     LAVA_SERVER=""
@@ -266,15 +266,13 @@ function clean_workspace() {
 function trigger_lava_build() {
     mkdir -p $GIT_DESCRIBE/${RESULTS_DIR}
 
-    for DISTRO in $SHELL_DISTRO;
-    do
+    for DISTRO in $SHELL_DISTRO; do
         if [ -d $DISTRO ];then
             rm -fr $DISTRO
         fi
         mkdir $DISTRO
 
-        for boot_plan in $BOOT_PLAN;
-        do
+        for boot_plan in $BOOT_PLAN; do
             rm -fr ${JOBS_DIR} ${RESULTS_DIR}
 
             # generate the boot jobs for all the targets

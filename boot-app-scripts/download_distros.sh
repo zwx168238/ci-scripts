@@ -24,11 +24,11 @@ function download_distro() {
     popd
 }
 
-location=${NFS_DIR:-/targetNFS/ubuntu_for_deployment}
 distro_loc=./sys_setup/distro
 distro=$1
 download_url=$2
 arch=$3
 board=$4
+location=$5
 echo "Download $distro from $dowload_url"
 download_distro $distro $download_url $arch $board

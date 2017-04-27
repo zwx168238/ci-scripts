@@ -30,6 +30,8 @@ function init_input_params() {
     VERSION=""
     LAVA_USER=""
 
+    # download distro
+    NFS_DIR=${NFS_DIR:-/targetNFS/ubuntu_for_deployment}
     # PACKAGES=""
     # SETUP_TYPE=""
 }
@@ -245,7 +247,7 @@ function download_all_distros() {
             URL_NAME=$FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}
             (
                 cd $TFTP_DIR
-                sudo ./download_distros.sh $DISTRO $URL_NAME ${board_arch} $PLAT
+                sudo ./download_distros.sh $DISTRO $URL_NAME ${board_arch} $PLAT ${NFS_DIR}
             )
         done
     done

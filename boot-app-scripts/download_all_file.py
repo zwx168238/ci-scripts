@@ -1,7 +1,7 @@
 
 # -*- coding: utf-8 -*-
-#                      
-#    E-mail    :    wu.wu@hisilicon.com 
+#
+#    E-mail    :    wu.wu@hisilicon.com
 #    Data      :    2016-03-02 17:26:17
 #    Desc      :
 
@@ -16,7 +16,7 @@ import subprocess
 parse_re = re.compile('href="([^./"?][^"?]*)"')
 def get_urlname(git_describe, job_tree, url, token):
     array = [url, job_tree, git_describe]
-    urlname = '/'.join(array) 
+    urlname = '/'.join(array)
     try:
         response = urllib2.urlopen(urlname, timeout=30).read()
     except URLError, e:
@@ -24,11 +24,11 @@ def get_urlname(git_describe, job_tree, url, token):
         return ''
     else:
         return urlname
-    
+
 address_list = []
 download_file = []
 def walk(url):
-    try: 
+    try:
         html = urllib2.urlopen(url, timeout=30).read()
     except IOError, e:
         print "error reading %s: %s" % (url, e)

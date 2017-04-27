@@ -37,8 +37,9 @@ function init_input_params() {
 
 function init_boot_env() {
     ESTUARY_DIR=estuary
-    BOOT_LOC=/targetNFS/ubuntu_for_deployment/sys_setup/bin
-    BOOT_DIR=/targetNFS/ubuntu_for_deployment/sys_setup/boot
+    # TODO : need mount nfs first.
+    BOOT_LOC=${BOOT_LOC:-/targetNFS/ubuntu_for_deployment/sys_setup/bin}
+    BOOT_DIR=${BOOT_DIR:-/targetNFS/ubuntu_for_deployment/sys_setup/boot}
     ESTUARY_CI_DIR=estuary_ci_files
     JOBS_DIR=jobs
     RESULTS_DIR=results
@@ -207,7 +208,9 @@ function download_tftp_images() {
 
     (
         cd $TFTP_DIR/${ESTUARY_DIR}
-        if [ ${SHELL_PLATFORM} =~ "D02" -o ${SHELL_PLATFORM} =~ "d02" ];then
+        mkdir -p $BOOT_LOC
+        mkdir -p $BOOT_DIR
+        if [ "${SHELL_PLATFORM}" =~ "D02" -o "${SHELL_PLATFORM}" =~ "d02" ];then
             echo "SHELL_PLATFORM = D02"
             sudo cp -f *.dtb *Image* $BOOT_LOC
             sudo cp -f *.dtb *Image* $BOOT_DIR

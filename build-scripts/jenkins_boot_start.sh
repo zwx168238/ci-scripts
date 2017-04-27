@@ -255,6 +255,7 @@ function clean_workspace() {
     rm -fr results*
 
     [ -d $GIT_DESCRIBE ] && rm -fr $GIT_DESCRIBE
+    set -e
 }
 
 function trigger_lava_build() {
@@ -457,6 +458,7 @@ function collect_result() {
 }
 
 function init_env() {
+    WORK_DIR=${WORKSPACE}/local
     CI_SCRIPTS_DIR=${WORKSPACE}/local/ci-scripts
 }
 

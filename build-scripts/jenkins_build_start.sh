@@ -155,8 +155,12 @@ function sync_code() {
 
     # sync and checkout files from repo
     #repo init
-    repo forall -c git reset --hard || true
-    repo forall -c git clean -dxf || true
+    if [ x"$SKIP_BUILD" = x"true" ];then
+        echo "skip git reset and clean"
+    else
+        repo forall -c git reset --hard || true
+        repo forall -c git clean -dxf || true
+    fi
 
     if [ "$VERSION"x != ""x ]; then
         repo init -u "https://github.com/open-estuary/estuary.git" \

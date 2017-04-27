@@ -27,7 +27,7 @@ function init_build_env() {
 }
 
 function clean_build() {
-    if [ "$SKIP_BUILD" = "true" ];then
+    if [ x"$SKIP_BUILD" = x"true" ];then
         sudo rm -fr $BUILD_DIR
     else
         :
@@ -225,7 +225,7 @@ function do_build() {
 
     cat $BUILD_CFG_FILE
 
-    if [ "$SKIP_BUILD" = "true" ];then
+    if [ x"$SKIP_BUILD" = x"true" ];then
         echo "skip build"
     else
         # Execute build
@@ -386,7 +386,7 @@ function main() {
     clean_build
     do_build
     get_version_info
-    if [ $SKIP_CP_IMAGE = "false" ];then
+    if [ x"$SKIP_CP_IMAGE" = x"false" ];then
         cp_image
     fi
     save_to_properties

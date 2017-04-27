@@ -1,4 +1,6 @@
 #!/bin/bash -ex
+# export CODE_REFERENCE=""
+
 function init_workspace() {
     WORKSPACE=${WORKSPACE:-~/estuary/WORKSPACE}
     mkdir -p ${WORKSPACE}
@@ -7,7 +9,7 @@ function init_workspace() {
 function init_env_params() {
     WORK_DIR=${WORKSPACE}/local
     CI_SCRIPTS_DIR=${WORK_DIR}/ci-scripts
-    CODE_REFERENCE=/home/ubuntu/estuary_reference
+    CODE_REFERENCE=${CODE_REFERENCE:-/home/ubuntu/estuary_reference}
 }
 
 function init_build_env() {

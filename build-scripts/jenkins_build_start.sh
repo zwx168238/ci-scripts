@@ -6,7 +6,7 @@ function init_build_option() {
 }
 
 function init_workspace() {
-    WORKSPACE=${WORKSPACE:-~/estuary/WORKSPACE}
+    WORKSPACE=${WORKSPACE:-/home/ubuntu/WORKSPACE}
     mkdir -p ${WORKSPACE}
 }
 

@@ -461,9 +461,10 @@ function init_env() {
 }
 
 function main() {
-    init_env
-    init_build_option
     init_workspace
+    init_build_option
+
+    init_env
     init_boot_env
 
     init_input_params

@@ -4,15 +4,17 @@ function download_distro() {
     download_url=$2
     arch=$3
     board=$4
-    distro=$(echo $distro | tr '[:upper:]' '[:lower:]')
-    ARCH=$(echo $arch | tr '[:lower:]' '[:upper:]')
-    BOARD=$(echo $board | tr '[:lower:]' '[:upper:]')
-    distro_def=${Distro}_$ARCH
+
     echo $distro_def
     mkdir -p $location
     pushd $location
     mkdir -p $distro_loc
     pushd $distro_loc
+
+    distro=$(echo $distro | tr '[:upper:]' '[:lower:]')
+    ARCH=$(echo $arch | tr '[:lower:]' '[:upper:]')
+    BOARD=$(echo $board | tr '[:lower:]' '[:upper:]')
+    distro_def=${Distro}_$ARCH
     [ ! -d $BOARD ] && mkdir $BOARD
     pushd $BOARD
     dist_name=${distro}$ARCH

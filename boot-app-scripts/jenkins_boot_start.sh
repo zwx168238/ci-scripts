@@ -37,7 +37,7 @@ function init_input_params() {
 }
 
 function prepare_tool() {
-    dev_tools="python-yaml python-keyring"
+    dev_tools="python-yaml python-keyring expect"
 
     if ! (dpkg-query -l $dev_tools >/dev/null 2>&1); then
         sudo apt-get update

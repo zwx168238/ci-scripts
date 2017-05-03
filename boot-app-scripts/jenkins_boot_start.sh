@@ -26,7 +26,7 @@ function init_input_params() {
     KERNELCI_TOKEN=""
     FTP_SERVER="http://172.17.0.8:8083"
     FTP_DIR=${FTP_DIR:-"${WORK_DIR}/images/kernel-ci"}
-    TFTP_DIR=${TFTP_DIR:-"${WORK_DIR}/tftpboot"}
+    TFTP_DIR=${TFTP_DIR:-"/var/lib/tftpboot"}
     VERSION=""
     LAVA_USER=""
 

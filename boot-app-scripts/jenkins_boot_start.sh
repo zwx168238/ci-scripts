@@ -21,6 +21,7 @@ function init_input_params() {
     HOST="192.168.67.123"
     LAVA_SERVER="http://172.17.0.10/RPC2"
     LAVA_STREAM="/anonymous/yangyang/"
+    LAVA_USER="yangyang"
     LAVA_TOKEN="wxmlc53xt908cnk81eoeo238xhhl6e0dc9sd05wkow46i7kjnanqfrnd5bk4rxjpoaso2pz8iip3nus4jbfke76uykxtmdodufd9zalzxmrbild0c41jmn6ws77h5sxg"
     KERNELCI_SERVER=""
     KERNELCI_TOKEN=""
@@ -28,7 +29,7 @@ function init_input_params() {
     FTP_DIR=${FTP_DIR:-"${WORK_DIR}/images/kernel-ci"}
     TFTP_DIR=${TFTP_DIR:-"/var/lib/tftpboot"}
     VERSION=""
-    LAVA_USER=""
+
 
     # download distro
     NFS_DIR=${NFS_DIR:-/mount/NFS/ubuntu_for_deployment_yangyang}

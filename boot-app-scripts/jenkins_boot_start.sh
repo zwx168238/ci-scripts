@@ -80,7 +80,7 @@ function generate_jobs() {
 }
 
 function run_and_report_jobs() {
-    if [ x"$SKIP_LAVA_RUN" = "false" ];then
+    if [ x"$SKIP_LAVA_RUN" = x"false" ];then
         pushd ${JOBS_DIR}
         python ../estuary-job-runner.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM --poll POLL
         popd

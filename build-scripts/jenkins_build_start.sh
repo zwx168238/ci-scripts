@@ -128,12 +128,17 @@ function init_timefile() {
 
 function prepare_repo_tool() {
     pushd $WORK_DIR
-    if [ ! -e bin ]; then
-        mkdir -p bin;
-        wget -c http://www.open-estuary.com/EstuaryDownloads/tools/repo -O bin/repo
-        chmod a+x bin/repo;
-    fi
+    mkdir -p bin;
     export PATH=${WORK_DIR}/bin:$PATH;
+    if [ ! -e bin ]; then
+        if which repo;then
+            echo "skip download repo"
+        else
+            echo "download repo"
+            wget -c http://www.open-estuary.com/EstuaryDownloads/tools/repo -O bin/repo
+            chmod a+x bin/repo;
+        fi
+    fi
     popd
 }
 

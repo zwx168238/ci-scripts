@@ -135,7 +135,7 @@ function prepare_repo_tool() {
             echo "skip download repo"
         else
             echo "download repo"
-            wget -c http://www.open-estuary.com/EstuaryDownloads/tools/repo -O bin/repo
+            wget -c http://download.open-estuary.org/AllDownloads/DownloadsEstuary/utils/repo -O bin/repo
             chmod a+x bin/repo;
         fi
     fi

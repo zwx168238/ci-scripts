@@ -40,7 +40,7 @@
                     "service ssh restart || systemctl restart sshd",
                     "ifconfig || ip addr",
 		    "[[ 'CentOS' == $(cat /etc/redhat-release | awk '{print $1}') ]] && [[ -n $(ps -ef | grep 'yum' | grep -v grep) ]] && killall yum && rm -fr /var/run/yum.pid",
-		    "[[ 'CentOS' == $(cat /etc/redhat-release | awk '{print $1}') ]] && yum update -y && yum install mariadb-devel -y && dhclient &",
+		    "[[ 'CentOS' == $(cat /etc/redhat-release | awk '{print $1}') ]] && yum update -y && dhclient &",
 		    "[[ 'Ubuntu' == $(cat /etc/issue | awk '{print $1}') ]] && [[ -n $(ps -ef | grep apt-get | grep -v grep) ]] && kill -9 $(ps -ef | grep  apt-get | grep -v grep | awk '{print $2}') && rm /var/cache/apt/archives/lock && rm /var/lib/dpkg/lock",
 		    "[[ 'Ubuntu' == $(cat /etc/issue | awk '{print $1}') ]] && apt-get update -y && apt-get install libmysqlclient-dev -y"
                 ]

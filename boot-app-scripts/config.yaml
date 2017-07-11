@@ -6,6 +6,7 @@ Build:
     Platform:
         - D02
         - D03
+        - D05
 DISTRO:
     D02:
         - Ubuntu: Ubuntu_ARM64.tar.gz
@@ -23,19 +24,21 @@ DISTRO:
         - Rancher: Rancher_ARM64.tar.gz
     D05:
         - CentOS: CentOS_ARM64.tar.gz
+        - Ubuntu: Ubuntu_ARM64.tar.gz
 
 
 # the dictionary for the board and arch mapping
 Arch:
     d03: arm64
     d02: arm64
+    d05: arm64
 
 # for lava connection
 LAVA:
     USER: htsat
-    HOST: 192.168.1.106
+    HOST: 192.168.3.100
     TOKEN: p53l26plbujbqaicsrkw0i1u3xu5qawxlx3imr41w3eiwg1y79jxtjkx209p2kccsc1obzy279c7ruydhskzotdlf6s3me0wb87o0rf71m0sehetlje9p0cr0dorkhf8
-    lavaserver: http://192.168.1.106/RPC2/
+    lavaserver: http://192.168.3.109/RPC2/
     lavastream: /anonymous/default/
     lavauser: default
 

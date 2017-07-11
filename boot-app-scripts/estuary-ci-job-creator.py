@@ -69,6 +69,20 @@ d03 = {'device_type': 'd03',
                             'lpae': False,
                             'be': False,
                             'fastboot': False}
+d05 = {'device_type': 'd05',
+    'templates': ['d05-arm64-kernel-ci-boot-template.json',
+                              'd05-arm64-kernel-ci-boot-sata-template.json',
+                              'd05-arm64-kernel-ci-boot-nfs-template.json',
+                              'd05-arm64-kernel-ci-boot-pxe-template.json',
+                              'd05-arm64-kernel-ci-weekly-template.json'],
+    'defconfig_blacklist': ['arm64-allnoconfig',
+                            'arm64-allmodconfig'],
+                            'kernel_blacklist': [],
+                            'nfs_blacklist': [],
+                            'lpae': False,
+                            'be': False,
+                            'fastboot': False}
+
 
 hi6220_hikey = {'device_type': 'hi6220-hikey',
                 'templates': ['generic-arm64-dtb-kernel-ci-boot-template.json',
@@ -86,7 +100,7 @@ dummy_ssh = {'device_type': 'dummy_ssh',
                             'iperf_client.json',
                             'ltp.json',
                             'perf.json',
-                            'cyclictest.json',
+                            'cyclictest-basic.json',
                             'exec_latency.json',
                             'kselftest-net.json',
                             'netperf.json',
@@ -96,6 +110,7 @@ dummy_ssh = {'device_type': 'dummy_ssh',
                             'ftp.json',
                             'lxc.json',
                             'mysql.json',
+                            'hadoop.json',
                             'smoke_basic_test.json',
                             'smoke.json',
                             'qemu.json',
@@ -104,7 +119,8 @@ dummy_ssh = {'device_type': 'dummy_ssh',
 
 device_map = {'hip04-d01.dtb': [d01],
               'hip05-d02.dtb': [d02],
-              'hip06-d03.dtb': [d03],
+              'D03': [d03],
+              'D05': [d05],
               'hisi-x5hd2-dkb.dtb': [hisi_x5hd2_dkb],
               #'qemu-arm-legacy': [qemu_arm],
               #'qemu-aarch64-legacy': [qemu_aarch64],
@@ -180,7 +196,7 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority,
 
     pubkey = get_pubkey()
     for platform in platform_list:
-        platform_name = platform.split('/')[-1]
+        platform_name = platform.split('/')[-1].partition('_')[-1]
         for device in device_map[platform_name]:
             device_type = device['device_type']
             device_templates = device['templates']
@@ -297,6 +313,12 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority,
                                         tmp = tmp.replace('{defconfig}', defconfig)
                                         tmp = tmp.replace('{fastboot}', str(fastboot).lower())
                                         tmp = tmp.replace('{distro_name}', distro)
+                                        # add by zhaoshijie, lava doesn't support centos in its source code,cheat it
+                                        if 'boot' in plan or 'BOOT' in plan:
+                                            tmp = tmp.replace('{target_type}', 'ubuntu')
+                                        else:
+                                            tmp = tmp.replace('{target_type}', str(distro).lower())
+                                        tmp = tmp.replace('{device_type_upper}', str(device_type).upper())
                                         if plan:
                                             tmp = tmp.replace('{test_plan}', plan)
                                         if test_suite:
@@ -413,9 +435,8 @@ def walk_url(url, distro_url, plans=None, arch=None, targets=None,
             if 'Image' in name and 'arm64' in url:
                 kernel = url + name
                 base_url = url
-            if name.endswith('.dtb') and name in device_map:
-                if base_url and base_url in url:
-                    platform_list.append(url + name)
+            if name.startswith('Image') and name.partition('_')[2] in device_map:
+                platform_list.append(url + name)
         if 'distro' in name:
             distro_url = url + name
     if kernel is not None and base_url is not None:

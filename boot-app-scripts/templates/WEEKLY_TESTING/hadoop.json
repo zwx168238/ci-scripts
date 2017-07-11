@@ -13,23 +13,19 @@
                 "test.plan": "{test_plan}"
             },
             "parameters": {
-                "target_type": "ubuntu"
+                "target_type": "{nfs_distro}"
             }
         },
         {
             "command": "lava_test_shell",
             "parameters": {
-                "testdef_repos": [
-                        {
-                            "git-repo": "https://github.com/joyxu/lava-test-definitions",
-                            "parameters": {
-                                "LEN": "16K",
-                                "REMOTE_IP": "192.168.1.106"
-                            },
-                            "testdef": "ubuntu/iperf-client.yaml"
-                        }
-                    ],
-                    "timeout": 7200
+            "testdef_repos": [
+                {
+                    "git-repo": "https://github.com/donjet/ci-test-cases.git",
+                    "testdef": "distro/{nfs_distro}/{nfs_distro}_hadoop.yaml"
+                }
+            ],
+            "timeout": 1200
             }
         },
         {
@@ -41,8 +37,8 @@
         }
     ],
     "device_type": "{device_type}",
-    "job_name": "{job_name}",
+    "job_name": "{job_name}-{nfs_distro}",
     "logging_level": "DEBUG",
     "priority": "high",
-    "timeout": 7200
+    "timeout": 1200
 }

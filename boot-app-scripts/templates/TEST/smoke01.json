@@ -1,7 +1,7 @@
 {
     "actions": [
         {
-            "command": "deploy_linaro_kernel",
+            "command": "dummy_deploy",
             "metadata": {
                 "image.type": "{image_type}",
                 "image.url": "{image_url}",
@@ -13,31 +13,19 @@
                 "test.plan": "{test_plan}"
             },
             "parameters": {
-                "target_type": "ubuntu"
+                "target_type": "{target_type}"
             }
-        },
-        {
-            "command": "boot_linaro_image"
-        },
-        {
-          "command": "lava_test_shell",
-          "parameters": {
-            "testdef_repos": [
-              {
-                "git-repo": "git://github.com/wuyuer/lava-test-cases.git",
-                "testdef": "ubuntu/device-tree.yaml"
-              }
-            ],
-            "timeout": 7200
-          }
         },
         {
             "command": "lava_test_shell",
             "parameters": {
                 "testdef_repos": [
                     {
-                        "git-repo": "git://github.com/wuyuer/lava-test-cases.git",
-                        "testdef": "common/dt-selftests.yaml"
+                        "git-repo": "https://github.com/donjet/ci-test-cases.git",
+                        "parameters": {
+                        },
+
+                        "testdef": "common/smoke.yaml"
                     }
                 ],
                 "timeout": 7200

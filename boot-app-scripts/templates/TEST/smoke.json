@@ -11,6 +11,9 @@
                 "kernel.defconfig": "{defconfig}",
                 "platform.fastboot": "{fastboot}",
                 "test.plan": "{test_plan}"
+            },
+            "parameters": {
+                "target_type": "{target_type}"
             }
         },
         {
@@ -18,12 +21,11 @@
             "parameters": {
                 "testdef_repos": [
                     {
-                        "git-repo": "https://github.com/wuyuer/lava-test-cases.git",
+                        "git-repo": "https://github.com/donjet/ci-test-cases.git",
                         "parameters": {
-                              "GATEWAY": "192.168.6.1",
-                              "TEST_INTERFACE": "eth3"
                         },
-                        "testdef": "ubuntu/network-tests-basic.yaml"
+
+                        "testdef": "common/smoke.yaml"
                     }
                 ],
                 "timeout": 7200

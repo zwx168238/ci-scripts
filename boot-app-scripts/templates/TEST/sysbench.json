@@ -11,18 +11,23 @@
                 "kernel.defconfig": "{defconfig}",
                 "platform.fastboot": "{fastboot}",
                 "test.plan": "{test_plan}"
+            },
+            "parameters": {
+                "target_type": "{target_type}"
             }
         },
         {
             "command": "lava_test_shell",
             "parameters": {
                 "testdef_repos": [
-                    {
-                        "git-repo": "git://github.com/wuyuer/lava-test-cases.git",
-                        "testdef": "ubuntu/exec-latency.yaml"
-                    }
-                ],
-                "timeout": 7200
+                        {
+                            "git-repo": "https://github.com/donjet/ci-test-cases.git",
+                            "parameters": {
+                            },
+                            "testdef": "common/sysbench.yaml"
+                        }
+                    ],
+                    "timeout": 7200
             }
         },
         {

@@ -11,6 +11,9 @@
                 "kernel.defconfig": "{defconfig}",
                 "platform.fastboot": "{fastboot}",
                 "test.plan": "{test_plan}"
+            },
+            "parameters": {
+                "target_type": "{target_type}"
             }
         },
         {
@@ -18,15 +21,14 @@
             "parameters": {
                 "testdef_repos": [
                     {
-                        "git-repo": "git://github.com/wuyuer/lava-test-cases.git",
+                        "git-repo": "https://github.com/donjet/ci-test-cases.git",
                         "parameters": {
-                            "DeviceID": "/dev/sda2"
                         },
 
-                        "testdef": "ubuntu/fio-test.yaml"
+                        "testdef": "common/ltp.yaml"
                     }
                 ],
-                "timeout": 7200
+                "timeout": 14400
             }
         },
         {

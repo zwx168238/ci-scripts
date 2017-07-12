@@ -27,7 +27,6 @@ function init_input_params() {
     KERNELCI_TOKEN=""
     FTP_SERVER="http://172.17.0.8:8083"
     FTP_DIR=${FTP_DIR:-"${WORK_DIR}/images/kernel-ci"}
-    TFTP_DIR=${TFTP_DIR:-"/var/lib/tftpboot"}
     VERSION=""
 
 
@@ -171,71 +170,6 @@ function init_summaryfile() {
     fi
 }
 
-function prepare_tftp_download_tools() {
-    mkdir -p $TFTP_DIR
-
-    pushd ${CI_SCRIPTS_DIR}/boot-app-scripts    # change current work directory
-    test -d $GIT_DESCRIBE && rm -fr $GIT_DESCRIBE
-
-    echo $TFTP_DIR
-    cp download_all_file.py download_distros.sh $TFTP_DIR
-    if [ $? -ne 0 ]; then
-        echo 'Upload download tools failed'
-        exit -1
-    fi
-}
-
-function download_tftp_images() {
-    (
-        cd $TFTP_DIR
-        [ -d ${ESTUARY_DIR} ] && rm -fr ${ESTUARY_DIR}
-        mkdir ${ESTUARY_DIR}
-
-        cd $TFTP_DIR/${ESTUARY_DIR}
-        python ../download_all_file.py -u $FTP_SERVER -d $GIT_DESCRIBE -j $TREE_NAME
-
-        SATA_IMAGE_DIR=sata_image
-        [ -d ${SATA_IMAGE_DIR} ] && rm -fr ${SATA_IMAGE_DIR}
-        mkdir ${SATA_IMAGE_DIR}
-
-        for file in *; do
-            if [ x"$(expr match "$file" '.*\(-sata\).*')" != x"" ]; then
-                mv $file ./${SATA_IMAGE_DIR}/${file/-sata/}
-            fi
-        done
-
-        [ -d /home/$USER/${ESTUARY_CI_DIR} ] && sudo rm -fr /home/$USER/${ESTUARY_CI_DIR}
-        sudo mkdir -p /home/$USER/${ESTUARY_CI_DIR}
-
-        if [[ ${SHELL_PLATFORM} =~ "D02" ]] || [[ ${SHELL_PLATFORM} =~ "d02" ]];then
-
-            sudo cp -rf *dtb *Image* mini* ${SATA_IMAGE_DIR} /home/$USER/${ESTUARY_CI_DIR}
-        else
-
-            sudo cp -rf *Image* mini* ${SATA_IMAGE_DIR} /home/$USER/${ESTUARY_CI_DIR}
-        fi
-
-        #sudo cp -rf *dtb *Image* mini* ${SATA_IMAGE_DIR} /home/$USER/${ESTUARY_CI_DIR}
-
-        rm -fr download_all_file.py
-    )
-
-    (
-        cd $TFTP_DIR/${ESTUARY_DIR}
-        mkdir -p $BOOT_LOC
-        mkdir -p $BOOT_DIR
-        if [ "${SHELL_PLATFORM}" =~ "D02" -o "${SHELL_PLATFORM}" =~ "d02" ];then
-            echo "SHELL_PLATFORM = D02"
-            sudo cp -f *.dtb *Image* $BOOT_LOC
-            sudo cp -f *.dtb *Image* $BOOT_DIR
-        else
-            echo "SHELL_PLATFORM >= D03"
-            sudo cp -f  *Image* $BOOT_LOC
-            sudo cp -f  *Image* $BOOT_DIR
-        fi
-    )
-}
-
 function parse_arch_map() {
     read -a arch <<< $(echo $ARCH_MAP)
     declare -A -g dict
@@ -247,21 +181,6 @@ function parse_arch_map() {
     done
 
     for key in "${!dict[@]}"; do echo "$key - ${dict[$key]}"; done
-}
-
-function download_all_distros() {
-    SHELL_PLATFORM="$(echo $SHELL_PLATFORM | tr '[:upper:]' '[:lower:]')"
-
-    for DISTRO in $SHELL_DISTRO; do
-        for PLAT in $SHELL_PLATFORM; do
-            board_arch=${dict[$PLAT]}
-            URL_NAME=$FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}
-            (
-                cd $TFTP_DIR
-                sudo ./download_distros.sh "${DISTRO}" "${URL_NAME}" "${board_arch}" "${PLAT}" "${NFS_DIR}"
-            )
-        done
-    done
 }
 
 function clean_workspace() {

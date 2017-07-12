@@ -1,4 +1,6 @@
 #!/bin/bash -ex
+# the server need open mode :
+# modprobe loop
 # export CODE_REFERENCE=""
 function init_build_option() {
     SKIP_BUILD=${SKIP_BUILD:-"false"}

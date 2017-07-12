@@ -27,6 +27,6 @@ if [ ! -d '.repo' ];then
 fi
 
 set +e
-false; while [ $? -ne 0 ]; do repo sync --force-sync; done
+false; while [ $? -ne 0 ]; do repo sync; done
 set -e
 repo list

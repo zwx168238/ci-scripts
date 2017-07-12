@@ -3,7 +3,7 @@ trap "exit 1" SIGINT SIGTERM
 
 # set default workspace , if don't run in jenkins
 WORKSPACE=${WORKSPACE:-$(pwd)}
-REFERENCE_PATH=${WORKSPACE:-~/estuary_reference}
+REFERENCE_PATH=${REFERENCE_PATH:-~/estuary_reference}
 
 cd ${WORKSPACE}
 ###################### prepare repo tool ######################

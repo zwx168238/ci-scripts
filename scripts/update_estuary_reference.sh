@@ -9,10 +9,12 @@ cd ${WORKSPACE}
 ###################### prepare repo tool ######################
 if [ ! -e bin ]; then
     mkdir -p bin;
-    wget -c http://www.open-estuary.com/EstuaryDownloads/tools/repo -O bin/repo
+    curl https://mirrors.tuna.tsinghua.edu.cn/git/git-repo -o repo
+    # wget -c http://www.open-estuary.com/EstuaryDownloads/tools/repo -O bin/repo
 fi
 
 chmod a+x bin/repo;
+export REPO_URL='https://mirrors.tuna.tsinghua.edu.cn/git/git-repo/'
 
 export PATH=${WORKSPACE}/bin:$PATH;
 

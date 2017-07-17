@@ -78,16 +78,16 @@ def submit_jobs(connection, server, bundle_stream=None):
     print "Submitting Jobs to Server..."
     for job in job_map:
         try:
-            with open(job, 'rb') as stream:
+            with open(job, 'rt') as stream:
                 job_data = stream.read()
                 # Injection
                 if bundle_stream is not None:
                     job_data = re.sub('LAVA_SERVER', server, job_data)
                     job_data = re.sub('BUNDLE_STREAM', bundle_stream, job_data)
-                    job_info = yaml.loads(job_data)
+                    job_info = yaml.load(job_data)
                     yaml.dump(job_info, open(job, 'w'),
                             sort_keys=True, indent=4, separators=(',', ':'))
-            job_info = yaml.loads(job_data)
+            job_info = yaml.load(job_data)
             # Check if request device(s) are available
             if 'target' in job_info:
                 if job_info['target'] in offline_devices:

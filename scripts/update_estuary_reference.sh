@@ -7,7 +7,7 @@ REFERENCE_PATH=${REFERENCE_PATH:-~/estuary_reference}
 
 cd ${WORKSPACE}
 ###################### prepare repo tool ######################
-if [ ! -e bin ]; then
+if [ ! -d bin ]; then
     mkdir -p bin;
     curl https://mirrors.tuna.tsinghua.edu.cn/git/git-repo -o bin/repo
     # wget -c http://www.open-estuary.com/EstuaryDownloads/tools/repo -O bin/repo

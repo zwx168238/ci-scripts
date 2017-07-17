@@ -72,7 +72,7 @@ d03 = {'device_type': 'd03',
 d05 = {'device_type': 'd05',
     'templates': ['d05-arm64-kernel-ci-boot-template.json',
                               'd05-arm64-kernel-ci-boot-sata-template.json',
-                              'd05-arm64-kernel-ci-boot-nfs-template.json',
+                              'd05-arm64-kernel-ci-boot-nfs-template.yaml',
                               'd05-arm64-kernel-ci-boot-pxe-template.json',
                               'd05-arm64-kernel-ci-weekly-template.json'],
     'defconfig_blacklist': ['arm64-allnoconfig',
@@ -131,13 +131,13 @@ device_map = {'hip04-d01.dtb': [d01],
 parse_re = re.compile('href="([^./"?][^"?]*)"')
 
 def setup_job_dir(directory):
-    print 'Setting up JSON output directory at: jobs/'
+    print 'Setting up YAML output directory at: jobs/'
     if not os.path.exists(directory):
         os.makedirs(directory)
     #else:
     #    shutil.rmtree(directory)
     #    os.makedirs(directory)
-    print 'Done setting up JSON output directory'
+    print 'Done setting up YAML output directory'
 
 # add by wuyanjun  2016/3/9
 distro_list = []
@@ -181,7 +181,7 @@ def get_pubkey():
 
 def create_jobs(base_url, kernel, plans, platform_list, targets, priority,
                 distro_url, distro="Ubuntu", sasFlag=False):
-    print 'Creating JSON Job Files...'
+    print 'Creating YAML Job Files...'
     cwd = os.getcwd()
     url = urlparse.urlparse(kernel)
     build_info = url.path.split('/')
@@ -276,7 +276,7 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority,
                         if template in dummy_ssh['templates']:
                             job_json = cwd + '/jobs/' + job_name + '-' + template
                         else:
-                            job_json = cwd + '/jobs/' + job_name + '.json'
+                            job_json = cwd + '/jobs/' + job_name + '.yaml'
                         template_file = cwd + '/templates/' + plan + '/' + str(template)
                         if os.path.exists(template_file):
                             with open(job_json, 'wt') as fout:
@@ -292,7 +292,7 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority,
                                         else:
                                             tmp = tmp.replace('{device_type}', device_type)
                                         tmp = tmp.replace('{job_name}',\
-                                                job_json.split("/")[-1].split(".json")[0])
+                                                job_json.split("/")[-1].split(".yaml")[0])
                                         if sasFlag:
                                             tmp = tmp.replace('{distro}', distro)
                                         # end by wuyanjun
@@ -344,7 +344,7 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority,
                             else:
                                 if re.findall('nfs_distro', whole_lines):
                                     rootfs_name = distro.lower()
-                                    modified_file = job_json.split('.json')[0] + '-' + rootfs_name + '.json'
+                                    modified_file = job_json.split('.yaml')[0] + '-' + rootfs_name + '.yaml'
                                     with open(modified_file, 'wt') as fout:
                                         with open(job_json, "rt") as fin:
                                             for line in fin:
@@ -360,7 +360,7 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority,
                             # add by wuyanjun 2016/5/12
                             # to support showing the distro name in the process of the SAS boot
                             if sasFlag:
-                                new_name = job_json.split(".json")[0] + '-' + distro + '.json'
+                                new_name = job_json.split(".yaml")[0] + '-' + distro + '.yaml'
                                 os.rename(job_json, new_name)
                                 job_json = new_name
                             print 'JSON Job created: jobs/%s' % job_json.split('/')[-1]
@@ -370,7 +370,7 @@ def fill_nfs_url(job_json, distro_list, device_type):
     for distro in distro_list:
         rootfs = re.findall("(.*?).tar.gz", distro.split('/')[-1])
         rootfs_name = rootfs[0].split('_')[0].lower()
-        modified_file = job_json.split('.json')[0] + '-' + rootfs_name + '.json'
+        modified_file = job_json.split('.yaml')[0] + '-' + rootfs_name + '.yaml'
         with open(modified_file, 'wt') as fout:
             with open(job_json, "rt") as fin:
                 for line in fin:

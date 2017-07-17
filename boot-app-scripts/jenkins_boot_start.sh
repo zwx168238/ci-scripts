@@ -12,7 +12,7 @@ function init_input_params() {
     GIT_DESCRIBE="uefi_b386a15_grub_daac831_kernel_6eade8c"
 
     TREE_NAME=open-estuary
-    SHELL_PLATFORM="D05"
+    SHELL_PLATFORM="d05"
     SHELL_DISTRO="Ubuntu"
     ARCH_MAP="d05 arm64"
     BOOT_PLAN="BOOT_NFS BOOT_SAS"
@@ -82,7 +82,7 @@ function generate_jobs() {
 function run_and_report_jobs() {
     if [ x"$SKIP_LAVA_RUN" = x"false" ];then
         pushd ${JOBS_DIR}
-        python ../estuary-job-runner.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM --poll POLL
+        python ../estuary-job-runner.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM --poll POLL  --timeout 600
         popd
 
         if [ ! -f ${JOBS_DIR}/${RESULTS_DIR}/POLL ]; then
@@ -196,12 +196,11 @@ function clean_workspace() {
 
 function trigger_lava_build() {
     mkdir -p $GIT_DESCRIBE/${RESULTS_DIR}
-
+    pushd ${WORKSPACE}/local/ci-scripts/boot-app-scripts
     for DISTRO in $SHELL_DISTRO; do
         if [ -d $DISTRO ];then
             rm -fr $DISTRO
         fi
-        mkdir $DISTRO
 
         for boot_plan in $BOOT_PLAN; do
             rm -fr ${JOBS_DIR} ${RESULTS_DIR}
@@ -348,6 +347,7 @@ function trigger_lava_build() {
         python parser.py -d $DISTRO
         mv $DISTRO $GIT_DESCRIBE/${RESULTS_DIR}
     done
+    popd
 }
 
 function collect_result() {
@@ -412,10 +412,7 @@ function main() {
     init_summaryfile
 
     ##### copy some files to the lava-server machine to support the boot process #####
-    prepare_tftp_download_tools
-    download_tftp_images
     parse_arch_map
-    download_all_distros
     clean_workspace
     print_time "the time of preparing all envireonment is "
     trigger_lava_build

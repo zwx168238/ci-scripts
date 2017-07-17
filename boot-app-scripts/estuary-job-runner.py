@@ -5,7 +5,7 @@
 
 import os
 import xmlrpclib
-import json
+import yaml
 import subprocess
 import fnmatch
 import time
@@ -84,10 +84,10 @@ def submit_jobs(connection, server, bundle_stream=None):
                 if bundle_stream is not None:
                     job_data = re.sub('LAVA_SERVER', server, job_data)
                     job_data = re.sub('BUNDLE_STREAM', bundle_stream, job_data)
-                    job_info = json.loads(job_data)
-                    json.dump(job_info, open(job, 'w'),
+                    job_info = yaml.loads(job_data)
+                    yaml.dump(job_info, open(job, 'w'),
                             sort_keys=True, indent=4, separators=(',', ':'))
-            job_info = json.loads(job_data)
+            job_info = yaml.loads(job_data)
             # Check if request device(s) are available
             if 'target' in job_info:
                 if job_info['target'] in offline_devices:
@@ -191,7 +191,7 @@ def submit_jobs(connection, server, bundle_stream=None):
                 print "Should never get here"
                 print os.path.basename(job) + ' : skip'
         except (xmlrpclib.ProtocolError, xmlrpclib.Fault, IOError, ValueError) as e:
-            print "JSON VALIDATION ERROR!"
+            print "YAML VALIDATION ERROR!"
             print job
             print e
             continue
@@ -200,7 +200,7 @@ def submit_jobs(connection, server, bundle_stream=None):
 def load_jobs():
     top = os.getcwd()
     for root, dirnames, filenames in os.walk(top):
-        for filename in fnmatch.filter(filenames, '*.json'):
+        for filename in fnmatch.filter(filenames, '*.yaml'):
             job_map[os.path.join(root, filename)] = None
 
 

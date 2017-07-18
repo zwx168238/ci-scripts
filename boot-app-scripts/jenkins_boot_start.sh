@@ -28,12 +28,6 @@ function init_input_params() {
     FTP_SERVER="http://172.18.0.2:8083"
     FTP_DIR=${FTP_DIR:-"${WORK_DIR}/images/kernel-ci"}
     VERSION=""
-
-
-    # download distro
-    NFS_DIR=${NFS_DIR:-/mount/NFS/ubuntu_for_deployment_yangyang}
-    # PACKAGES=""
-    # SETUP_TYPE=""
 }
 
 function prepare_tool() {

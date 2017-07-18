@@ -19,13 +19,13 @@ function init_input_params() {
     APP_PLAN="TEST"
     USER="yangyang"
     HOST="192.168.67.123"
-    LAVA_SERVER="http://172.18.0.4/RPC2"
-    LAVA_STREAM="/anonymous/admin/"
-    LAVA_USER="admin"
-    LAVA_TOKEN="6oxf406arezh49qusmr00xahto8rkqzi7kx12gdqgpa163330l3t100ua8awfxssgy4flq1hxb08tzchqoetn12itqqjsficpj35xcdemc3aymzr10bysky0yp72nf7u"
+    LAVA_SERVER="http://172.17.0.10/RPC2"
+    LAVA_STREAM="/anonymous/yangyang/"
+    LAVA_USER="yangyang"
+    LAVA_TOKEN="wxmlc53xt908cnk81eoeo238xhhl6e0dc9sd05wkow46i7kjnanqfrnd5bk4rxjpoaso2pz8iip3nus4jbfke76uykxtmdodufd9zalzxmrbild0c41jmn6ws77h5sxg"
     KERNELCI_SERVER=""
     KERNELCI_TOKEN=""
-    FTP_SERVER="http://172.18.0.2:8083"
+    FTP_SERVER="http://172.17.0.8:8083"
     FTP_DIR=${FTP_DIR:-"${WORK_DIR}/images/kernel-ci"}
     VERSION=""
 }

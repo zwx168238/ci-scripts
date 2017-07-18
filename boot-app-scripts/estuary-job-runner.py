@@ -78,7 +78,7 @@ def submit_jobs(connection, server, bundle_stream=None):
     print "Submitting Jobs to Server..."
     for job in job_map:
         try:
-            with open(job, 'rb') as stream:
+            with open(job, 'rt') as stream:
                 job_data = stream.read()
                 # Injection
                 if bundle_stream is not None:

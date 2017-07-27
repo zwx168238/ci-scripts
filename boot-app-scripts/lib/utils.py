@@ -4,6 +4,7 @@ import shutil
 import urlparse
 import xmlrpclib
 import json
+import yaml
 import ssl
 
 
@@ -16,10 +17,18 @@ def write_json(name, directory, data):
     with open(os.path.join(directory, name), 'w') as f:
         json.dump(data, f, indent=4, sort_keys=True)
 
-
 def load_json(json_file):
     with open(json_file, 'r') as f:
         return json.load(f)
+
+def write_yaml(name, directory, data):
+    with open(os.path.join(directory, name), 'w') as f:
+        yaml.dump(data, f, indent=4)
+
+
+def load_yaml(yaml_file):
+    with open(yaml_file, 'r') as f:
+        return yaml.load(f)
 
 
 def mkdir(directory):

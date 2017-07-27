@@ -29,6 +29,7 @@ device_map = {'arndale': ['exynos5250-arndale', 'exynos'],
               'd02': ['hip05-d02', 'hisi'],
               'd03': ['hip06-d03', 'hisi'],
               'd05': ['d05_01', 'hisi'],
+              'ssh': ['ssh01', None],
               #'dummy_ssh': ['hip05-d02', 'hisi'],
               'hi6220-hikey': ['hi6220-hikey', 'hisi'],
               'qemu-arm-cortex-a15': ['vexpress-v2p-ca15-tc1', 'vexpress'],
@@ -61,8 +62,8 @@ def download_log2html(url):
     utils.write_file(script, 'log2html.py', os.getcwd())
 
 
-def parse_json(json):
-    jobs = utils.load_json(json)
+def parse_yaml(json):
+    jobs = utils.load_yaml(json)
     url = utils.validate_input(jobs['username'], jobs['token'], jobs['server'])
     connection = utils.connect(url)
     duration = jobs['duration']
@@ -221,7 +222,7 @@ def get_ip_board_mapping(contents, filename, directory, report_directory):
                 '\t' + match[-1] + '\n' )
 
 def boot_report(config):
-    connection, jobs, duration =  parse_json(config.get("boot"))
+    connection, jobs, duration =  parse_yaml(config.get("boot"))
     # TODO: Fix this when multi-lab sync is working
     #download_log2html(log2html)
     results_directory = os.getcwd() + '/results'
@@ -381,29 +382,11 @@ def boot_report(config):
                     test_plan = test_tmp
         else:
             if not kernel_defconfig or not kernel_version or not kernel_tree:
-                job_defnition = {}
-                if 'original_definition' in job_details.keys():
-                    job_definition = job_details['original_definition']
-                    try:
-                        job_dictionary = eval(job_definition)
-                    except Exception:
-                        pass
-                    if job_dictionary:
-                        if 'actions' in job_dictionary.keys():
-                            actions = job_dictionary['actions']
-                            for i in range(0, len(actions)):
-                                try:
-                                    kernel_defconfig = actions[i]['metadata']['kernel.defconfig']
-                                    kernel_version = actions[i]['metadata']['kernel.version']
-                                    kernel_tree = actions[i]['metadata']['kernel.tree']
-                                    kernel_endian = actions[i]['metadata']['kernel.endian']
-                                    platform_fastboot = actions[i]['metadata']['platform.fastboot']
-                                    device_tree = actions[i]['metadata']['kernel.tree']
-                                    break
-                                except KeyError:
-                                    continue
-                if 'target' in job_details.keys():
-                    print job_details.keys()
+              kernel_defconfig = 'arm64-defconfig'
+              kernel_version = 'uefi_b386a15_grub_daac831_kernel_6eade8c'
+              kernel_tree = 'arm64'
+              kernel_endian = 'little'
+              device_tree = 'ssh'
         # Check if we found efi-rtc
         if test_plan == 'boot-kvm-uefi' and not efi_rtc:
             if device_type == 'dynamic-vm':

@@ -283,7 +283,7 @@ def main(args):
         jobs['server'] = config.get("server")
         results_directory = os.getcwd() + '/results'
         utils.mkdir(results_directory)
-        utils.write_json(config.get("poll"), results_directory, jobs)
+        utils.write_yaml(config.get("poll"), results_directory, jobs)
     exit(0)
 
 if __name__ == '__main__':

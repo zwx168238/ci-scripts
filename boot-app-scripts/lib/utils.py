@@ -30,12 +30,18 @@ def load_yaml(yaml_file):
     with open(yaml_file, 'r') as f:
         return yaml.load(f)
 
-
 def mkdir(directory):
     if not ensure_dir(directory):
         shutil.rmtree(directory)
         os.makedirs(directory)
 
+def get_value_by_key(list, key):
+    for i in range(0, len(list)):
+        line = list[i]
+        if key in str(line.keys()):
+            value = line.values()
+            break
+    return value
 
 def ensure_dir(directory):
     if not os.path.exists(directory):

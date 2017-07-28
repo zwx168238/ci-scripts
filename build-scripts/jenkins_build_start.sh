@@ -190,6 +190,12 @@ function sync_code() {
     popd
 }
 
+function hotfix_download_estuary_defconfig() {
+    cd $OPEN_ESTUARY_DIR/kernel/arch/arm64/configs
+    wget https://raw.githubusercontent.com/open-estuary/kernel/v3.1/arch/arm64/configs/estuary_defconfig -o estuary_defconfig
+    cd -
+}
+
 function do_build() {
     pushd $OPEN_ESTUARY_DIR;    # enter OPEN_ESTUARY_DIR
 
@@ -431,6 +437,9 @@ function main() {
 
     sync_code
     clean_build
+
+    hotfix_download_estuary_defconfig
+
     do_build
     get_version_info
     if [ x"$SKIP_CP_IMAGE" = x"false" ];then

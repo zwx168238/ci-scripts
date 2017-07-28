@@ -37,26 +37,26 @@ function clean_build() {
 }
 
 function init_input_params() {
-    TREE_NAME=open-estuary
-    SHELL_PLATFORM="D05"
-    SHELL_DISTRO="Ubuntu"
-    ARCH_MAP="d05 arm64"
-    BOOT_PLAN="BOOT_NFS BOOT_SAS"
-    APP_PLAN="TEST"
-    USER="yangyang"
-    HOST="192.168.67.123"
-    LAVA_SERVER=""
-    LAVA_STREAM=""
-    LAVA_TOKEN=""
-    KERNELCI_SERVER=""
-    KERNELCI_TOKEN=""
-    FTP_SERVER="http://172.17.0.8:8083"
-    FTP_DIR=${FTP_DIR:-"${WORK_DIR}/images/kernel-ci"}
+    TREE_NAME=${TREE_NAME:-"open-estuary"}
+    SHELL_PLATFORM=${SHELL_PLATFORM:-"D05"}
+    SHELL_DISTRO=${SHELL_DISTRO:-"Ubuntu"}
+    ARCH_MAP=${ARCH_MAP:-"d05 arm64"}
+    BOOT_PLAN=${BOOT_PLAN:-"BOOT_NFS BOOT_SAS"}
+    APP_PLAN=${APP_PLAN:-"TEST"}
+    USER=${USER:-"yangyang"}
+    HOST=${HOST:-"192.168.67.123"}
+    LAVA_SERVER=${LAVA_SERVER:-""}
+    LAVA_STREAM=${LAVA_STREAM:-""}
+    LAVA_TOKEN=${LAVA_TOKEN:-""}
+    KERNELCI_SERVER=${KERNELCI_SERVER:-""}
+    KERNELCI_TOKEN=${KERNELCI_TOKEN:-""}
+    FTP_SERVER=${FTP_SERVER:-"http://172.17.0.8:8083"}
+    FTP_DIR=${FTP_DIR:-"/fileserver/open-estuary"}
     TFTP_DIR=${TFTP_DIR:-"${WORK_DIR}/tftpboot"}
-    VERSION=""
-    LAVA_USER=""
-    PACKAGES=""
-    SETUP_TYPE=""
+    VERSION=${VERSION:-""}
+    LAVA_USER=${LAVA_USER:-""}
+    PACKAGES=${PACKAGES:-""}
+    SETUP_TYPE=${SETUP_TYPE:-""}
 }
 
 function parse_params() {
@@ -188,6 +188,12 @@ function sync_code() {
     print_time "the end time of finishing downloading estuary is "
 
     popd
+}
+
+function hotfix_download_estuary_defconfig() {
+    cd $OPEN_ESTUARY_DIR/kernel/arch/arm64/configs
+    wget https://raw.githubusercontent.com/open-estuary/kernel/v3.1/arch/arm64/configs/estuary_defconfig -o estuary_defconfig
+    cd -
 }
 
 function do_build() {
@@ -431,6 +437,9 @@ function main() {
 
     sync_code
     clean_build
+
+    hotfix_download_estuary_defconfig
+
     do_build
     get_version_info
     if [ x"$SKIP_CP_IMAGE" = x"false" ];then

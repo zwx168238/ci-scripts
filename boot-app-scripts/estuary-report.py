@@ -62,8 +62,8 @@ def download_log2html(url):
     utils.write_file(script, 'log2html.py', os.getcwd())
 
 
-def parse_yaml(json):
-    jobs = utils.load_yaml(json)
+def parse_yaml(yaml):
+    jobs = utils.load_yaml(yaml)
     url = utils.validate_input(jobs['username'], jobs['token'], jobs['server'])
     connection = utils.connect(url)
     duration = jobs['duration']
@@ -382,11 +382,13 @@ def boot_report(config):
                     test_plan = test_tmp
         else:
             if not kernel_defconfig or not kernel_version or not kernel_tree:
-              kernel_defconfig = 'arm64-defconfig'
-              kernel_version = 'uefi_b386a15_grub_daac831_kernel_6eade8c'
-              kernel_tree = 'arm64'
-              kernel_endian = 'little'
-              device_tree = 'ssh'
+              job_metadata_info = connection.results.get_testjob_metadata(job_id)
+              kernel_defconfig = utils.get_value_by_key(job_metadata_info,'kernel_defconfig')
+              kernel_version = utils.get_value_by_key(job_metadata_info,'kernel_version')
+              kernel_tree = utils.get_value_by_key(job_metadata_info,'kernel_tree')
+              kernel_endian = utils.get_value_by_key(job_metadata_info,'kernel_endian')
+              device_tree = utils.get_value_by_key(job_metadata_info,'device_tree')
+              platform.fastboot = utils.get_value_by_key(job_metadata_info,'platform.fastboot')
         # Check if we found efi-rtc
         if test_plan == 'boot-kvm-uefi' and not efi_rtc:
             if device_type == 'dynamic-vm':

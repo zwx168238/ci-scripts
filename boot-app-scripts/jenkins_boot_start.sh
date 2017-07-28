@@ -9,25 +9,23 @@ function init_workspace() {
 }
 
 function init_input_params() {
-    GIT_DESCRIBE="uefi_b386a15_grub_daac831_kernel_6eade8c"
+    GIT_DESCRIBE=${GIT_DESCRIBE:-"uefi_b386a15_grub_daac831_kernel_6eade8c"}
 
-    TREE_NAME=open-estuary
-    SHELL_PLATFORM="D05"
-    SHELL_DISTRO="Ubuntu"
-    ARCH_MAP="d05 arm64"
-    BOOT_PLAN="BOOT_NFS BOOT_SAS"
-    APP_PLAN="TEST"
-    USER="yangyang"
-    HOST="192.168.67.123"
-    LAVA_SERVER="http://172.17.0.10/RPC2"
-    LAVA_STREAM="/anonymous/yangyang/"
-    LAVA_USER="yangyang"
-    LAVA_TOKEN="wxmlc53xt908cnk81eoeo238xhhl6e0dc9sd05wkow46i7kjnanqfrnd5bk4rxjpoaso2pz8iip3nus4jbfke76uykxtmdodufd9zalzxmrbild0c41jmn6ws77h5sxg"
-    KERNELCI_SERVER=""
-    KERNELCI_TOKEN=""
-    FTP_SERVER="http://172.17.0.8:8083"
+    TREE_NAME=${TREE_NAME:-"open-estuary"}
+    SHELL_PLATFORM=${SHELL_PLATFORM:-"D05"}
+    SHELL_DISTRO=${SHELL_DISTRO:-"Ubuntu"}
+    ARCH_MAP=${ARCH_MAP:-"d05 arm64"}
+    BOOT_PLAN=${BOOT_PLAN:-"BOOT_NFS BOOT_SAS"}
+    APP_PLAN=${APP_PLAN:-"TEST"}
+    USER=${USER:-"yangyang"}
+    HOST=${HOST:-"192.168.67.123"}
+    LAVA_SERVER=${LAVA_SERVER:-"http://172.17.0.10/RPC2"}
+    LAVA_STREAM=${LAVA_STREAM:-"/anonymous/yangyang/"}
+    LAVA_USER=${LAVA_USER:-"yangyang"}
+    LAVA_TOKEN=${LAVA_TOKEN:-"wxmlc53xt908cnk81eoeo238xhhl6e0dc9sd05wkow46i7kjnanqfrnd5bk4rxjpoaso2pz8iip3nus4jbfke76uykxtmdodufd9zalzxmrbild0c41jmn6ws77h5sxg"}
+    FTP_SERVER=${FTP_SERVER:-"http://172.17.0.8:8083"}
     FTP_DIR=${FTP_DIR:-"${WORK_DIR}/images/kernel-ci"}
-    VERSION=""
+    VERSION=${VERSION:-""}
 
 
     # download distro

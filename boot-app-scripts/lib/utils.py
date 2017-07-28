@@ -41,7 +41,7 @@ def get_value_by_key(list, key):
         if key in str(line.keys()):
             value = line.values()
             break
-    return str(value)
+    return str(value).replace('[','').replace(']','').replace('\'','')
 
 def ensure_dir(directory):
     if not os.path.exists(directory):

@@ -22,7 +22,7 @@ function init_input_params() {
     LAVA_SERVER="http://192.168.1.108/RPC2"
     LAVA_STREAM="/anonymous/admin/"
     LAVA_USER="admin"
-    LAVA_TOKEN="epmdg2k49g15ek5b5wehswg2u2mg7ktgg2rkmwuopz24u9dbb0z842i0k405l0k2by7p5ryhm12619mkbjp0t4bwyubxzl1j512z2s4xcjp90r23ac86ne2qkmlkk7r2"
+    LAVA_TOKEN="0p9a29zs4rq15xyaaw9eza9sa1hsdb8axx4p9fankh6j0304wrla08w9n7s9qghn2m8bnofcolbrng0sy0zzef7awwt6hjnajhmnoq5aj0ufxm4mqt7629d3fskcnm75"
     KERNELCI_SERVER=""
     KERNELCI_TOKEN=""
     FTP_SERVER="http://192.168.1.108:8083"

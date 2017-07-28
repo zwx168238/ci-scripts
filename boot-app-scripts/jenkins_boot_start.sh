@@ -76,7 +76,7 @@ function generate_jobs() {
 function run_and_report_jobs() {
     if [ x"$SKIP_LAVA_RUN" = x"false" ];then
         pushd ${JOBS_DIR}
-        python ../estuary-job-runner.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM --poll POLL  --timeout 600
+        python ../estuary-job-runner.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM --poll POLL
         popd
 
         if [ ! -f ${JOBS_DIR}/${RESULTS_DIR}/POLL ]; then

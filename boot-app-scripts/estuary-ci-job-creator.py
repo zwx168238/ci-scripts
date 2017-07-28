@@ -363,7 +363,7 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority,
                                 new_name = job_json.split(".yaml")[0] + '-' + distro + '.yaml'
                                 os.rename(job_json, new_name)
                                 job_json = new_name
-                            print 'JSON Job created: jobs/%s' % job_json.split('/')[-1]
+                            print 'YAML Job created: jobs/%s' % job_json.split('/')[-1]
 
 # to fill the {nfs_url} instead of ${rootnfs_address_url}
 def fill_nfs_url(job_json, distro_list, device_type):
@@ -475,7 +475,7 @@ def main(args):
             config.get("arch"), config.get("targets"), config.get("priority"),
             distro, config.get("SasFlag"))
     print 'Done scanning for kernel information'
-    print 'Done creating JSON jobs'
+    print 'Done creating YAML jobs'
     exit(0)
 
 if __name__ == '__main__':

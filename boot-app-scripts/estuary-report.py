@@ -382,13 +382,15 @@ def boot_report(config):
                     test_plan = test_tmp
         else:
             if not kernel_defconfig or not kernel_version or not kernel_tree:
-              job_metadata_info = connection.results.get_testjob_metadata(job_id)
-              kernel_defconfig = utils.get_value_by_key(job_metadata_info,'kernel_defconfig')
-              kernel_version = utils.get_value_by_key(job_metadata_info,'kernel_version')
-              kernel_tree = utils.get_value_by_key(job_metadata_info,'kernel_tree')
-              kernel_endian = utils.get_value_by_key(job_metadata_info,'kernel_endian')
-              device_tree = utils.get_value_by_key(job_metadata_info,'device_tree')
-              platform.fastboot = utils.get_value_by_key(job_metadata_info,'platform.fastboot')
+              try:
+                  job_metadata_info = connection.results.get_testjob_metadata(job_id)
+                  kernel_defconfig = utils.get_value_by_key(job_metadata_info,'kernel_defconfig')
+                  kernel_version = utils.get_value_by_key(job_metadata_info,'kernel_version')
+                  kernel_tree = utils.get_value_by_key(job_metadata_info,'kernel_tree')
+                  kernel_endian = utils.get_value_by_key(job_metadata_info,'kernel_endian')
+                  device_tree = utils.get_value_by_key(job_metadata_info,'device_tree')
+              except Exception:
+                continue
         # Check if we found efi-rtc
         if test_plan == 'boot-kvm-uefi' and not efi_rtc:
             if device_type == 'dynamic-vm':

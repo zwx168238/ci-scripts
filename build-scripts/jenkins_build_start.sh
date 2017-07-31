@@ -50,7 +50,7 @@ function init_input_params() {
     LAVA_TOKEN=${LAVA_TOKEN:-""}
     KERNELCI_SERVER=${KERNELCI_SERVER:-""}
     KERNELCI_TOKEN=${KERNELCI_TOKEN:-""}
-    FTP_SERVER=${FTP_SERVER:-"http://172.17.0.8:8083"}
+    FTP_SERVER=${FTP_SERVER:-"http://192.168.1.108:8083"}
     FTP_DIR=${FTP_DIR:-"/fileserver/open-estuary"}
     TFTP_DIR=${TFTP_DIR:-"${WORK_DIR}/tftpboot"}
     VERSION=${VERSION:-""}

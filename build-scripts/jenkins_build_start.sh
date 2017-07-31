@@ -38,10 +38,10 @@ function clean_build() {
 
 function init_input_params() {
     TREE_NAME=${TREE_NAME:-"open-estuary"}
-    SHELL_PLATFORM=${SHELL_PLATFORM:-"D05"}
+    SHELL_PLATFORM=${SHELL_PLATFORM:-"d05"}
     SHELL_DISTRO=${SHELL_DISTRO:-"Ubuntu"}
     ARCH_MAP=${ARCH_MAP:-"d05 arm64"}
-    BOOT_PLAN=${BOOT_PLAN:-"BOOT_NFS BOOT_SAS"}
+    BOOT_PLAN=${BOOT_PLAN:-"BOOT_NFS"}
     APP_PLAN=${APP_PLAN:-"TEST"}
     USER=${USER:-"yangyang"}
     HOST=${HOST:-"192.168.67.123"}
@@ -75,10 +75,7 @@ function parse_params() {
     : ${LAVA_STREAM:=`python parameter_parser.py -f config.yaml -s LAVA -k lavastream`}
     : ${LAVA_TOKEN:=`python parameter_parser.py -f config.yaml -s LAVA -k TOKEN`}
 
-    : ${KERNELCI_SERVER:=`python parameter_parser.py -f config.yaml -s Kernelci -k server`}
-    : ${KERNELCI_TOKEN:=`python parameter_parser.py -f config.yaml -s Kernelci -k token`}
-
-    : ${FTP_SERVER:=`python parameter_parser.py -f config.yaml -s Kernelci -k ftpserver`}
+    : ${FTP_SERVER:=`python parameter_parser.py -f config.yaml -s Ftpinfo -k ftpserver`}
 
     echo $ARCH_MAP
     : ${ARCH_MAP:=`python parameter_parser.py -f config.yaml -s Arch`}
@@ -104,7 +101,6 @@ KERNELCI_SERVER=$KERNELCI_SERVER
 KERNELCI_TOKEN=$KERNELCI_TOKEN
 FTP_SERVER=$FTP_SERVER
 ARCH_MAP=$ARCH_MAP
-TFTP_DIR=$TFTP_DIR
 EOF
     # EXECUTE_STATUS="Failure"x
     cat ${WORKSPACE}/env.properties

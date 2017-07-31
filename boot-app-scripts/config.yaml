@@ -35,11 +35,11 @@ Arch:
 #    TOKEN: p53l26plbujbqaicsrkw0i1u3xu5qawxlx3imr41w3eiwg1y79jxtjkx209p2kccsc1obzy279c7ruydhskzotdlf6s3me0wb87o0rf71m0sehetlje9p0cr0dorkhf8
 LAVA:
     USER: htsat
-    HOST: 192.168.3.100
-    TOKEN: g43y0wtyi0m2ua7in3xtfch1m2s1dd0k97ac1fqqhqd0qblimtehqkwk8mjimsyh0jczrnaibdlb23mtn17qca6i14tcl27h7md580za5p8w81fl035b6bk1ybw26lle
-    lavaserver: http://192.168.3.100/RPC2/
-    lavastream: /anonymous/default/
-    lavauser: default
+    HOST: 192.168.1.108
+    TOKEN: 0p9a29zs4rq15xyaaw9eza9sa1hsdb8axx4p9fankh6j0304wrla08w9n7s9qghn2m8bnofcolbrng0sy0zzef7awwt6hjnajhmnoq5aj0ufxm4mqt7629d3fskcnm75
+    lavaserver: http://192.168.1.108/RPC2/
+    lavastream: /anonymous/admin/
+    lavauser: admin
 
 # for lava job parameter
 Jenkins:
@@ -49,7 +49,6 @@ Jenkins:
         - TEST
 
 # for kernelci access
-Kernelci:
-    server: http://192.168.108:8083
-    token: 3eda8013-da37-42ea-b9a0-7a66badd1b68
+Ftpinfo:
     ftpserver: http://192.168.1.108:8083
+    FTP_DIR : /fileserver/open-estuary

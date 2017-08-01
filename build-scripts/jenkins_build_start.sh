@@ -209,6 +209,7 @@ function do_build() {
     echo $SHELL_PLATFORM
     for PLATFORM in $SHELL_PLATFORM
     do
+        PLATFORM=${PLATFORM^^}
         sed -i -e "/$PLATFORM/s/no/yes/" $BUILD_CFG_FILE
     done
 

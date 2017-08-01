@@ -9,6 +9,7 @@ function init_workspace() {
 }
 
 function init_input_params() {
+
     GIT_DESCRIBE="uefi_b386a15_grub_daac831_kernel_6eade8c"
 
     TREE_NAME=open-estuary
@@ -27,6 +28,7 @@ function init_input_params() {
     KERNELCI_TOKEN=""
     FTP_SERVER="http://192.168.1.108:8083"
     FTP_DIR=${FTP_DIR:-"${WORK_DIR}/images/kernel-ci"}
+
     VERSION=""
 }
 

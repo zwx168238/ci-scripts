@@ -2,20 +2,37 @@
 # the server need open mode :
 # modprobe loop
 # export CODE_REFERENCE=""
+
+# prepare system tools
+function prepare_tools() {
+    dev_tools="python-yaml"
+
+    if ! (dpkg-query -l $dev_tools >/dev/null 2>&1); then
+        sudo apt-get update
+        if ! (sudo apt-get install -y --force-yes $dev_tools); then
+            echo "ERROR: can't install tools: ${dev_tools}"
+            exit 1
+        fi
+    fi
+}
+
+# jenkins job debug variables
 function init_build_option() {
     SKIP_BUILD=${SKIP_BUILD:-"false"}
     SKIP_CP_IMAGE=${SKIP_CP_IMAGE:-"false"}
 }
 
+# ensure workspace exist
 function init_workspace() {
-    WORKSPACE=${WORKSPACE:-/home/ubuntu/WORKSPACE}
+    WORKSPACE=${WORKSPACE:-/home/ts/jenkins/workspace/estuary-build}
     mkdir -p ${WORKSPACE}
 }
 
+# init sub dirs path
 function init_env_params() {
     WORK_DIR=${WORKSPACE}/local
     CI_SCRIPTS_DIR=${WORK_DIR}/ci-scripts
-    CODE_REFERENCE=${CODE_REFERENCE:-/home/ubuntu/estuary_reference}
+    CODE_REFERENCE=${CODE_REFERENCE:-/estuary_reference}
 }
 
 function init_build_env() {
@@ -37,25 +54,25 @@ function clean_build() {
 }
 
 function init_input_params() {
+    # project name
     TREE_NAME=${TREE_NAME:-"open-estuary"}
+
+    # select a version
+    VERSION=${VERSION:-""}
+
+    # select borad
     SHELL_PLATFORM=${SHELL_PLATFORM:-"d05"}
     SHELL_DISTRO=${SHELL_DISTRO:-"Ubuntu"}
     ARCH_MAP=${ARCH_MAP:-"d05 arm64"}
+
+    # test plan
     BOOT_PLAN=${BOOT_PLAN:-"BOOT_NFS"}
     APP_PLAN=${APP_PLAN:-"TEST"}
-    USER=${USER:-"yangyang"}
-    HOST=${HOST:-"192.168.67.123"}
-    LAVA_SERVER=${LAVA_SERVER:-""}
-    LAVA_STREAM=${LAVA_STREAM:-""}
-    LAVA_TOKEN=${LAVA_TOKEN:-""}
-    KERNELCI_SERVER=${KERNELCI_SERVER:-""}
-    KERNELCI_TOKEN=${KERNELCI_TOKEN:-""}
-    FTP_SERVER=${FTP_SERVER:-"http://192.168.1.108:8083"}
-    FTP_DIR=${FTP_DIR:-"/fileserver"}
-    TFTP_DIR=${TFTP_DIR:-"${WORK_DIR}/tftpboot"}
-    VERSION=${VERSION:-""}
-    LAVA_USER=${LAVA_USER:-""}
+
+    # preinstall packages
     PACKAGES=${PACKAGES:-""}
+
+    # all setup types
     SETUP_TYPE=${SETUP_TYPE:-""}
 }
 
@@ -67,40 +84,28 @@ function parse_params() {
     : ${BOOT_PLAN:=`python parameter_parser.py -f config.yaml -s Jenkins -k Boot`}
     : ${APP_PLAN:=`python parameter_parser.py -f config.yaml -s Jenkins -k App`}
 
-    : ${USER:=`python parameter_parser.py -f config.yaml -s LAVA -k USER`}
-    : ${HOST:=`python parameter_parser.py -f config.yaml -s LAVA -k HOST`}
-
     : ${LAVA_SERVER:=`python parameter_parser.py -f config.yaml -s LAVA -k lavaserver`}
     : ${LAVA_USER:=`python parameter_parser.py -f config.yaml -s LAVA -k lavauser`}
     : ${LAVA_STREAM:=`python parameter_parser.py -f config.yaml -s LAVA -k lavastream`}
     : ${LAVA_TOKEN:=`python parameter_parser.py -f config.yaml -s LAVA -k TOKEN`}
 
     : ${FTP_SERVER:=`python parameter_parser.py -f config.yaml -s Ftpinfo -k ftpserver`}
+    : ${FTP_DIR:=`python parameter_parser.py -f config.yaml -s Ftpinfo -k FTP_DIR`}
 
-    echo $ARCH_MAP
     : ${ARCH_MAP:=`python parameter_parser.py -f config.yaml -s Arch`}
-    echo $ARCH_MAP
 
     popd    # restore current work directory
 }
 
 function save_to_properties() {
     cat << EOF > ${WORKSPACE}/env.properties
-GIT_DESCRIBE=$GIT_DESCRIBE
-SHELL_PLATFORM=$SHELL_PLATFORM
-SHELL_DISTRO=$SHELL_DISTRO
-BOOT_PLAN=$BOOT_PLAN
-APP_PLAN=$APP_PLAN
-USER=$USER
-HOST=$HOST
-LAVA_SERVER=$LAVA_SERVER
-LAVA_USER=$LAVA_USER
-LAVA_STREAM=$LAVA_STREAM
-LAVA_TOKEN=$LAVA_TOKEN
-KERNELCI_SERVER=$KERNELCI_SERVER
-KERNELCI_TOKEN=$KERNELCI_TOKEN
-FTP_SERVER=$FTP_SERVER
-ARCH_MAP=$ARCH_MAP
+TREE_NAME=${TREE_NAME}
+GIT_DESCRIBE=${GIT_DESCRIBE}
+SHELL_PLATFORM=${SHELL_PLATFORM}
+SHELL_DISTRO=${SHELL_DISTRO}
+BOOT_PLAN=${BOOT_PLAN}
+APP_PLAN=${APP_PLAN}
+ARCH_MAP=${ARCH_MAP}
 EOF
     # EXECUTE_STATUS="Failure"x
     cat ${WORKSPACE}/env.properties
@@ -140,17 +145,6 @@ function prepare_repo_tool() {
     popd
 }
 
-function prepare_yaml_tool() {
-    dev_tools="python-yaml"
-
-    if ! (dpkg-query -l $dev_tools >/dev/null 2>&1); then
-        sudo apt-get update
-        if ! (sudo apt-get install -y --force-yes $dev_tools); then
-            return 1
-        fi
-    fi
-}
-
 function sync_code() {
     mkdir -p $OPEN_ESTUARY_DIR;
 
@@ -186,12 +180,14 @@ function sync_code() {
     popd
 }
 
+# master don't have arch/arm64/configs/estuary_defconfig file
 function hotfix_download_estuary_defconfig() {
     cd $OPEN_ESTUARY_DIR/kernel/arch/arm64/configs
     wget https://raw.githubusercontent.com/open-estuary/kernel/v3.1/arch/arm64/configs/estuary_defconfig -o estuary_defconfig
     cd -
 }
 
+# config the estuarycfg.json , do the build
 function do_build() {
     pushd $OPEN_ESTUARY_DIR;    # enter OPEN_ESTUARY_DIR
 
@@ -203,37 +199,32 @@ function do_build() {
 
     # Make platforms supported to "yes"
     echo $SHELL_PLATFORM
-    for PLATFORM in $SHELL_PLATFORM
-    do
+    for PLATFORM in $SHELL_PLATFORM; do
         PLATFORM=${PLATFORM^^}
         sed -i -e "/$PLATFORM/s/no/yes/" $BUILD_CFG_FILE
     done
 
     # Set all distros support to "no"
     distros=(Ubuntu OpenSuse Fedora Debian CentOS Rancher OpenEmbedded)
-    for ((i=0; i<${#distros[@]}; i++))
-    do
+    for ((i=0; i<${#distros[@]}; i++)); do
         sed -i -e "/${distros[$i]}/s/yes/no/" $BUILD_CFG_FILE
     done
 
     # Make distros supported to "yes"
     echo $SHELL_DISTRO
-    for DISTRO in $SHELL_DISTRO
-    do
+    for DISTRO in $SHELL_DISTRO; do
         sed -i -e "/$DISTRO/s/no/yes/" $BUILD_CFG_FILE
     done
 
     # Set all packages supported to yes
     echo $PACKAGES
-    for package in $PACKAGES
-    do
+    for package in $PACKAGES; do
         sed -i -e "/${package}/s/no/yes/" $BUILD_CFG_FILE
     done
 
     # Set all setup types supported to "no"
     echo $SETUP_TYPE
-    for setuptype in $SETUP_TYPE
-    do
+    for setuptype in $SETUP_TYPE;do
         sed -i -e "/${setuptype}/s/yes/no/" $BUILD_CFG_FILE
     done
 
@@ -256,6 +247,7 @@ function do_build() {
 
 }
 
+# generate version number by git sha
 function get_version_info() {
     pushd $OPEN_ESTUARY_DIR;    # enter OPEN_ESTUARY_DIR
 
@@ -289,6 +281,16 @@ function get_version_info() {
 }
 
 
+function parse_arch_map(){
+    read -a arch_map <<< $(echo $ARCH_MAP)
+    declare -A -g arch
+    for((i=0; i<${#arch_map[@]}; i++)); do
+        if ((i%2==0)); then
+            j=`expr $i+1`
+            arch[${arch_map[$i]}]=${arch_map[$j]}
+        fi
+    done
+}
 
 # image dir tree:
 # .
@@ -337,16 +339,6 @@ function cp_image() {
 
     sudo cp $timefile $DES_DIR
 
-    read -a arch_map <<< $(echo $ARCH_MAP)
-    declare -A arch
-    for((i=0; i<${#arch_map[@]}; i++))
-    do
-        if ((i%2==0)); then
-            j=`expr $i+1`
-            arch[${arch_map[$i]}]=${arch_map[$j]}
-        fi
-    done
-
     ls -l $BUILD_DIR
     pushd $BUILD_DIR  # enter BUILD_DIR
 
@@ -359,7 +351,7 @@ function cp_image() {
     popd
 
     # copy platfom files
-    for PLATFORM in $SHELL_PLATFORM;do
+    for PLATFORM in $SHELL_PLATFORM; do
         echo $PLATFORM
 
         PLATFORM_L="$(echo $PLATFORM | tr '[:upper:]' '[:lower:]')"
@@ -416,7 +408,7 @@ function cp_image() {
 }
 
 function main() {
-    prepare_yaml_tool
+    prepare_tools
 
     init_build_option
     init_workspace
@@ -424,8 +416,8 @@ function main() {
     init_build_env
 
     init_input_params
-
     parse_params
+
     save_to_properties
     show_properties
 
@@ -439,6 +431,7 @@ function main() {
 
     do_build
     get_version_info
+    parse_arch_map
     if [ x"$SKIP_CP_IMAGE" = x"false" ];then
         cp_image
     fi

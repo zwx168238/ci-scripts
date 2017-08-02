@@ -35,8 +35,6 @@ Arch:
 
 # for lava connection
 LAVA:
-    USER: htsat
-    HOST: 192.168.1.108
     TOKEN: 0p9a29zs4rq15xyaaw9eza9sa1hsdb8axx4p9fankh6j0304wrla08w9n7s9qghn2m8bnofcolbrng0sy0zzef7awwt6hjnajhmnoq5aj0ufxm4mqt7629d3fskcnm75
     lavaserver: http://192.168.1.108/RPC2/
     lavastream: /anonymous/admin/
@@ -52,4 +50,4 @@ Jenkins:
 # for kernelci access
 Ftpinfo:
     ftpserver: http://192.168.1.108:8083
-    FTP_DIR : /fileserver/open-estuary
+    FTP_DIR : /fileserver

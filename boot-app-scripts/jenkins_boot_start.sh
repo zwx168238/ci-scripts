@@ -4,38 +4,54 @@ function init_build_option() {
 }
 
 function init_workspace() {
-    WORKSPACE=${WORKSPACE:-/home/ubuntu/WORKSPACE}
+    WORKSPACE=${WORKSPACE:-/home/ts/jenkins/workspace/estuary-build}
     mkdir -p ${WORKSPACE}
 }
 
 function init_input_params() {
+    TREE_NAME=${TREE_NAME:-"open-estuary"}
+
+    VERSION=${VERSION:-""}
+
     GIT_DESCRIBE=${GIT_DESCRIBE:-"uefi_b386a15_grub_daac831_kernel_6eade8c"}
 
-    TREE_NAME=${TREE_NAME:-"open-estuary"}
     SHELL_PLATFORM=${SHELL_PLATFORM:-"d05"}
     SHELL_DISTRO=${SHELL_DISTRO:-"Ubuntu"}
     ARCH_MAP=${ARCH_MAP:-"d05 arm64"}
+
     BOOT_PLAN=${BOOT_PLAN:-"BOOT_NFS BOOT_SAS"}
     APP_PLAN=${APP_PLAN:-"TEST"}
-    USER=${USER:-"yangyang"}
-    HOST=${HOST:-"192.168.67.123"}
-    LAVA_SERVER=${LAVA_SERVER:-"http://192.168.1.108/RPC2"}
-    LAVA_STREAM=${LAVA_STREAM:-"/anonymous/admin/"}
-    LAVA_USER=${LAVA_USER:-"admin"}
-    LAVA_TOKEN=${LAVA_TOKEN:-"0p9a29zs4rq15xyaaw9eza9sa1hsdb8axx4p9fankh6j0304wrla08w9n7s9qghn2m8bnofcolbrng0sy0zzef7awwt6hjnajhmnoq5aj0ufxm4mqt7629d3fskcnm75"}
-    FTP_SERVER=${FTP_SERVER:-"http://192.168.1.108:8083"}
-    FTP_DIR=${FTP_DIR:-"${WORK_DIR}/images/kernel-ci"}
-
-    VERSION=""
 }
 
-function prepare_tool() {
+function parse_params() {
+    pushd ${CI_SCRIPTS_DIR}/boot-app-scripts    # change current work directory
+    : ${SHELL_PLATFORM:=`python parameter_parser.py -f config.yaml -s Build -k Platform`}
+    : ${SHELL_DISTRO:=`python parameter_parser.py -f config.yaml -s Build -k Distro`}
+
+    : ${BOOT_PLAN:=`python parameter_parser.py -f config.yaml -s Jenkins -k Boot`}
+    : ${APP_PLAN:=`python parameter_parser.py -f config.yaml -s Jenkins -k App`}
+
+    : ${LAVA_SERVER:=`python parameter_parser.py -f config.yaml -s LAVA -k lavaserver`}
+    : ${LAVA_USER:=`python parameter_parser.py -f config.yaml -s LAVA -k lavauser`}
+    : ${LAVA_STREAM:=`python parameter_parser.py -f config.yaml -s LAVA -k lavastream`}
+    : ${LAVA_TOKEN:=`python parameter_parser.py -f config.yaml -s LAVA -k TOKEN`}
+
+    : ${FTP_SERVER:=`python parameter_parser.py -f config.yaml -s Ftpinfo -k ftpserver`}
+    : ${FTP_DIR:=`python parameter_parser.py -f config.yaml -s Ftpinfo -k FTP_DIR`}
+
+    : ${ARCH_MAP:=`python parameter_parser.py -f config.yaml -s Arch`}
+
+    popd    # restore current work directory
+}
+
+function prepare_tools() {
     dev_tools="python-yaml python-keyring expect"
 
     if ! (dpkg-query -l $dev_tools >/dev/null 2>&1); then
         sudo apt-get update
         if ! (sudo apt-get install -y --force-yes $dev_tools); then
-            return 1
+            echo "ERROR: can't install tools: ${dev_tools}"
+            exit 1
         fi
     fi
 }
@@ -66,8 +82,8 @@ function generate_jobs() {
         fi
 
         if [ $? -ne 0 ]; then
-            echo "create the boot jobs error! Aborting"
-            return -1
+            echo "ERROR: create the boot jobs error! Aborting"
+            exit -1
         fi
     done
 }
@@ -397,8 +413,9 @@ function main() {
     init_boot_env
 
     init_input_params
+    parse_params
 
-    prepare_tool
+    prepare_tools
 
     init_timefile
     print_time "the begin time of boot test is "

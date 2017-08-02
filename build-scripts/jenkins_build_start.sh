@@ -200,8 +200,8 @@ function do_build() {
     # Make platforms supported to "yes"
     echo $SHELL_PLATFORM
     for PLATFORM in $SHELL_PLATFORM; do
-        PLATFORM=${PLATFORM^^}
-        sed -i -e "/$PLATFORM/s/no/yes/" $BUILD_CFG_FILE
+        PLATFORM_U=${PLATFORM^^}
+        sed -i -e "/$PLATFORM_U/s/no/yes/" $BUILD_CFG_FILE
     done
 
     # Set all distros support to "no"
@@ -355,6 +355,7 @@ function cp_image() {
         echo $PLATFORM
 
         PLATFORM_L="$(echo $PLATFORM | tr '[:upper:]' '[:lower:]')"
+        PLATFORM_U="$(echo $PLATFORM | tr '[:lower:]' '[:upper:]')"
         PLATFORM_ARCH_DIR=$DES_DIR/${PLATFORM_L}-${arch[$PLATFORM_L]}
         [ -d $PLATFORM_ARCH_DIR ] && sudo rm -fr $PLATFORM_ARCH_DIR
         sudo mkdir -p ${PLATFORM_ARCH_DIR}/{binary,toolchain,distro}
@@ -365,8 +366,8 @@ function cp_image() {
         popd
 
         # copy binary files
-        sudo find binary/$PLATFORM/ -type l -exec rm {} \;  || true # ensure remove symlinks
-        sudo cp -rf binary/$PLATFORM/* $PLATFORM_ARCH_DIR/binary
+        sudo find binary/$PLATFORM_U/ -type l -exec rm {} \;  || true # ensure remove symlinks
+        sudo cp -rf binary/$PLATFORM_U/* $PLATFORM_ARCH_DIR/binary
 
         pushd $PLATFORM_ARCH_DIR/binary
         sudo ln -s ../../${arch[$PLATFORM_L]}/$KERNEL_IMG_FILE ${KERNEL_IMG_FILE}_${PLATFORM}
@@ -383,7 +384,7 @@ function cp_image() {
             echo $DISTRO
 
             pushd ${CI_SCRIPTS_DIR}/boot-app-scripts
-            distro_tar_name=`python parameter_parser.py -f config.yaml -s DISTRO -k $PLATFORM -v $DISTRO`
+            distro_tar_name=`python parameter_parser.py -f config.yaml -s DISTRO -k $PLATFORM_U -v $DISTRO`
             popd
 
             if [ x"$distro_tar_name" = x"" ]; then

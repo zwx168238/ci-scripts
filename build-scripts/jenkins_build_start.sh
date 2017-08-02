@@ -51,7 +51,7 @@ function init_input_params() {
     KERNELCI_SERVER=${KERNELCI_SERVER:-""}
     KERNELCI_TOKEN=${KERNELCI_TOKEN:-""}
     FTP_SERVER=${FTP_SERVER:-"http://192.168.1.108:8083"}
-    FTP_DIR=${FTP_DIR:-"/fileserver/open-estuary"}
+    FTP_DIR=${FTP_DIR:-"/fileserver"}
     TFTP_DIR=${TFTP_DIR:-"${WORK_DIR}/tftpboot"}
     VERSION=${VERSION:-""}
     LAVA_USER=${LAVA_USER:-""}

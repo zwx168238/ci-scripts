@@ -85,8 +85,7 @@ def submit_jobs(connection, server, bundle_stream=None):
                     job_data = re.sub('LAVA_SERVER', server, job_data)
                     job_data = re.sub('BUNDLE_STREAM', bundle_stream, job_data)
                     job_info = yaml.load(job_data)
-                    yaml.dump(job_info, open(job, 'w'),
-                            sort_keys=True, indent=4, separators=(',', ':'))
+                    yaml.dump(job_info, open(job, 'w'),indent=4)
             job_info = yaml.load(job_data)
             # Check if request device(s) are available
             if 'target' in job_info:

@@ -365,7 +365,7 @@ function cp_image() {
         popd
 
         # copy binary files
-        sudo find binary/$PLATFORM/ -type l -exec rm {} \; # remove symlinks
+        sudo find binary/$PLATFORM/ -type l -exec rm {} \;  || true # ensure remove symlinks
         sudo cp -rf binary/$PLATFORM/* $PLATFORM_ARCH_DIR/binary
 
         pushd $PLATFORM_ARCH_DIR/binary

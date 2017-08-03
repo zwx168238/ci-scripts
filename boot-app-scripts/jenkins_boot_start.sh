@@ -122,6 +122,7 @@ function judge_pass_or_not() {
         echo "jobs fail"
         return -1
     fi
+    return 0
 }
 
 function run_and_move_result() {
@@ -129,6 +130,7 @@ function run_and_move_result() {
     dest_dir=$2
 
     ret_val=0
+    set +e
     run_and_report_jobs
     if [ $? -ne 0 ] ;then
         ret_val=-1
@@ -138,7 +140,7 @@ function run_and_move_result() {
     if [ $? -ne 0 ] ; then
         ret_val=-1
     fi
-
+    set -e
     [ -d ${JOBS_DIR} ] && mv ${JOBS_DIR} ${JOBS_DIR}_${test_name}
     [ -d ${RESULTS_DIR} ] && mv ${RESULTS_DIR} ${RESULTS_DIR}_${test_name}
 
@@ -199,13 +201,13 @@ function clean_workspace() {
     rm -fr jobs*
     rm -fr results*
 
-    [ -d $GIT_DESCRIBE ] && rm -fr $GIT_DESCRIBE
+    [ -d ${GIT_DESCRIBE} ] && rm -fr ${GIT_DESCRIBE}
     set -e
 }
 
 function trigger_lava_build() {
-    mkdir -p $GIT_DESCRIBE/${RESULTS_DIR}
     pushd ${WORKSPACE}/local/ci-scripts/boot-app-scripts
+    mkdir -p ${GIT_DESCRIBE}/${RESULTS_DIR}
     for DISTRO in $SHELL_DISTRO; do
         if [ -d $DISTRO ];then
             rm -fr $DISTRO
@@ -232,10 +234,10 @@ function trigger_lava_build() {
                 run_and_move_result "boot" $DISTRO
                 if [ $? -ne 0 ] ;then
                     python parser.py -d $DISTRO
-                    if [ ! -d $GIT_DESCRIBE/${RESULTS_DIR}/${DISTRO} ];then
-                        mv ${DISTRO} $GIT_DESCRIBE/${RESULTS_DIR}/ && continue
+                    if [ ! -d ${GIT_DESCRIBE}/${RESULTS_DIR}/${DISTRO} ];then
+                        mv ${DISTRO} ${GIT_DESCRIBE}/${RESULTS_DIR}/ && continue
                     else
-                        cp -fr ${DISTRO}/* $GIT_DESCRIBE/${RESULTS_DIR}/${DISTRO}/ && continue
+                        cp -fr ${DISTRO}/* ${GIT_DESCRIBE}/${RESULTS_DIR}/${DISTRO}/ && continue
                     fi
                 fi
 
@@ -262,10 +264,10 @@ function trigger_lava_build() {
                     run_and_move_result ${BOOT_FOR_TEST} $DISTRO
                     if [ $? -ne 0 ] ;then
                         python parser.py -d $DISTRO
-                        if [ ! -d $GIT_DESCRIBE/${RESULTS_DIR}/${DISTRO} ];then
-                            mv ${DISTRO} $GIT_DESCRIBE/${RESULTS_DIR} && continue
+                        if [ ! -d ${GIT_DESCRIBE}/${RESULTS_DIR}/${DISTRO} ];then
+                            mv ${DISTRO} ${GIT_DESCRIBE}/${RESULTS_DIR} && continue
                         else
-                            cp -fr ${DISTRO}/* $GIT_DESCRIBE/${RESULTS_DIR}/${DISTRO}/ && continue
+                            cp -fr ${DISTRO}/* ${GIT_DESCRIBE}/${RESULTS_DIR}/${DISTRO}/ && continue
                         fi
                     fi
                 fi
@@ -286,10 +288,10 @@ function trigger_lava_build() {
                     if [ $? -ne 0 ]; then
                         echo "create ip and host mapping error! Aborting"
                         python parser.py  -d $DISTRO
-                        if [ ! -d $GIT_DESCRIBE/${RESULTS_DIR}/${DISTRO} ];then
-                            mv ${DISTRO} $GIT_DESCRIBE/${RESULTS_DIR} && continue
+                        if [ ! -d ${GIT_DESCRIBE}/${RESULTS_DIR}/${DISTRO} ];then
+                            mv ${DISTRO} ${GIT_DESCRIBE}/${RESULTS_DIR} && continue
                         else
-                            cp -fr ${DISTRO}/* $GIT_DESCRIBE/${RESULTS_DIR}/${DISTRO}/ && continue
+                            cp -fr ${DISTRO}/* ${GIT_DESCRIBE}/${RESULTS_DIR}/${DISTRO}/ && continue
                         fi
                     fi
 
@@ -302,10 +304,10 @@ function trigger_lava_build() {
                         generate_jobs $app_plan $DISTRO
                         if [ $? -ne 0 ] ;then
                             python parser.py -d $DISTRO
-                            if [ ! -d $GIT_DESCRIBE/${RESULTS_DIR}/${DISTRO} ];then
-                                mv ${DISTRO} $GIT_DESCRIBE/${RESULTS_DIR}/ && continue
+                            if [ ! -d ${GIT_DESCRIBE}/${RESULTS_DIR}/${DISTRO} ];then
+                                mv ${DISTRO} ${GIT_DESCRIBE}/${RESULTS_DIR}/ && continue
                             else
-                                cp -fr ${DISTRO}/* $GIT_DESCRIBE/${RESULTS_DIR}/${DISTRO}/ && continue
+                                cp -fr ${DISTRO}/* ${GIT_DESCRIBE}/${RESULTS_DIR}/${DISTRO}/ && continue
                             fi
                         fi
                     done
@@ -320,10 +322,10 @@ function trigger_lava_build() {
 
                         if [ $? -ne 0 ] ;then
                             python parser.py -d $DISTRO
-                            if [ ! -d $GIT_DESCRIBE/${RESULTS_DIR}/${DISTRO} ];then
-                                mv ${DISTRO} $GIT_DESCRIBE/${RESULTS_DIR}/ && continue
+                            if [ ! -d ${GIT_DESCRIBE}/${RESULTS_DIR}/${DISTRO} ];then
+                                mv ${DISTRO} ${GIT_DESCRIBE}/${RESULTS_DIR}/ && continue
                             else
-                                cp -fr ${DISTRO}/* $GIT_DESCRIBE/${RESULTS_DIR}/${DISTRO}/ && continue
+                                cp -fr ${DISTRO}/* ${GIT_DESCRIBE}/${RESULTS_DIR}/${DISTRO}/ && continue
                             fi
                         fi
 
@@ -336,16 +338,16 @@ function trigger_lava_build() {
                 rm -fr ${JOBS_DIR} ${RESULTS_DIR}
 
                 generate_jobs $boot_plan $DISTRO
-                [ $? -ne 0 ] && python parser.py -d $DISTRO && mv $DISTRO $GIT_DESCRIBE/${RESULTS_DIR} && continue
+                [ $? -ne 0 ] && python parser.py -d $DISTRO && mv $DISTRO ${GIT_DESCRIBE}/${RESULTS_DIR} && continue
 
                 if [ -d ${JOBS_DIR} ]; then
                     run_and_move_result $boot_plan $DISTRO
                     if [ $? -ne 0 ] ;then
                         python parser.py -d $DISTRO
-                        if [ ! -d $GIT_DESCRIBE/${RESULTS_DIR}/${DISTRO} ];then
-                            mv ${DISTRO} $GIT_DESCRIBE/${RESULTS_DIR} && continue
+                        if [ ! -d ${GIT_DESCRIBE}/${RESULTS_DIR}/${DISTRO} ];then
+                            mv ${DISTRO} ${GIT_DESCRIBE}/${RESULTS_DIR} && continue
                         else
-                            cp -fr ${DISTRO}/* $GIT_DESCRIBE/${RESULTS_DIR}/${DISTRO}/ && continue
+                            cp -fr ${DISTRO}/* ${GIT_DESCRIBE}/${RESULTS_DIR}/${DISTRO}/ && continue
                         fi
                     fi
                 fi
@@ -354,39 +356,40 @@ function trigger_lava_build() {
             fi
         done
         python parser.py -d $DISTRO
-        mv $DISTRO $GIT_DESCRIBE/${RESULTS_DIR}
+        mv $DISTRO ${GIT_DESCRIBE}/${RESULTS_DIR}
     done
     popd
 }
 
 function collect_result() {
     # push the binary files to the ftpserver
-    DES_DIR=$FTP_DIR/$TREE_NAME/$GIT_DESCRIBE/
+    pushd ${WORKSPACE}/local/ci-scripts/boot-app-scripts
+    DES_DIR=${FTP_DIR}/${TREE_NAME}/${GIT_DESCRIBE}/
     [ ! -d $DES_DIR ] && echo "Don't have the images and dtbs" && exit -1
 
-    pushd $GIT_DESCRIBE
+    pushd ${GIT_DESCRIBE}
     python ../parser.py -s ${RESULTS_DIR}
     popd
 
-    tar czf test_result.tar.gz $GIT_DESCRIBE/*
+    tar czf test_result.tar.gz ${GIT_DESCRIBE}/*
     cp test_result.tar.gz  ${WORKSPACE}
 
     WHOLE_SUM='whole_summary.txt'
     if [  -e  ${WORKSPACE}/${WHOLE_SUM} ]; then
         rm -rf  ${WORKSPACE}/${WHOLE_SUM}
     fi
-    cp $GIT_DESCRIBE/${RESULTS_DIR}/${WHOLE_SUM} ${WORKSPACE}
-    cp -rf $timefile ${WORKSPACE}
+    cp ${GIT_DESCRIBE}/${RESULTS_DIR}/${WHOLE_SUM} ${WORKSPACE}
+    cp -rf $timefile ${WORKSPACE}||true
 
 
-    #zip -r ${GIT_DESCRIBE}_results.zip $GIT_DESCRIBE/*
-    cp -f $timefile $GIT_DESCRIBE
+    #zip -r ${{GIT_DESCRIBE}}_results.zip ${GIT_DESCRIBE}/*
+    cp -f $timefile ${GIT_DESCRIBE}
 
-    if [ -d $DES_DIR/$GIT_DESCRIBE/results ];then
-        sudo rm -fr $DES_DIR/$GIT_DESCRIBE/results
-        sudo rm -fr $DES_DIR/$GIT_DESCRIBE/$timefile
+    if [ -d $DES_DIR/${GIT_DESCRIBE}/results ];then
+        sudo rm -fr $DES_DIR/${GIT_DESCRIBE}/results
+        sudo rm -fr $DES_DIR/${GIT_DESCRIBE}/$timefile
     fi
-    sudo cp -rf $GIT_DESCRIBE/* $DES_DIR
+    sudo cp -rf ${GIT_DESCRIBE}/* $DES_DIR
     [ $? -ne 0 ]&& exit -1
 
     popd    # restore current work directory

@@ -56,13 +56,7 @@ function prepare_tools() {
     fi
 }
 
-
 function init_boot_env() {
-    ESTUARY_DIR=estuary
-    # TODO : need mount nfs first.
-    BOOT_LOC=${BOOT_LOC:-/targetNFS/ubuntu_for_deployment/sys_setup/bin}
-    BOOT_DIR=${BOOT_DIR:-/targetNFS/ubuntu_for_deployment/sys_setup/boot}
-    ESTUARY_CI_DIR=estuary_ci_files
     JOBS_DIR=jobs
     RESULTS_DIR=results
 }
@@ -72,18 +66,12 @@ function generate_jobs() {
     distro=$2
     harddisk_flag=$3
     pwd
-    for PLAT in $SHELL_PLATFORM
-    do
+    for PLAT in $SHELL_PLATFORM; do
         board_arch=${dict[$PLAT]}
         if [ x"$distro" != x"" ]; then
             python estuary-ci-job-creator.py $FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}/ --plans $test_name --distro $distro $harddisk_flag --arch ${board_arch}
         else
             python estuary-ci-job-creator.py $FTP_SERVER/${TREE_NAME}/${GIT_DESCRIBE}/${PLAT}-${board_arch}/ --plans $test_name --arch ${board_arch}
-        fi
-
-        if [ $? -ne 0 ]; then
-            echo "ERROR: create the boot jobs error! Aborting"
-            exit -1
         fi
     done
 }
@@ -111,13 +99,13 @@ function run_and_report_jobs() {
 }
 
 function judge_pass_or_not() {
-    FAIL_FLAG=$(grep -R 'FAIL' ./${JOBS_DIR}/${RESULTS_DIR}/POLL)
+    FAIL_FLAG=$(grep -R 'FAIL' ./${JOBS_DIR}/${RESULTS_DIR}/POLL || true)
     if [ "$FAIL_FLAG"x != ""x ]; then
         echo "jobs fail"
         return -1
     fi
 
-    PASS_FLAG=$(grep -R 'PASS' ./${JOBS_DIR}/${RESULTS_DIR}/POLL)
+    PASS_FLAG=$(grep -R 'PASS' ./${JOBS_DIR}/${RESULTS_DIR}/POLL || true)
     if [ "$PASS_FLAG"x = ""x ]; then
         echo "jobs fail"
         return -1
@@ -130,17 +118,15 @@ function run_and_move_result() {
     dest_dir=$2
 
     ret_val=0
-    set +e
-    run_and_report_jobs
-    if [ $? -ne 0 ] ;then
+
+    if ! run_and_report_jobs ;then
         ret_val=-1
     fi
 
-    judge_pass_or_not
-    if [ $? -ne 0 ] ; then
+    if ! judge_pass_or_not ; then
         ret_val=-1
     fi
-    set -e
+
     [ -d ${JOBS_DIR} ] && mv ${JOBS_DIR} ${JOBS_DIR}_${test_name}
     [ -d ${RESULTS_DIR} ] && mv ${RESULTS_DIR} ${RESULTS_DIR}_${test_name}
 
@@ -167,9 +153,9 @@ export
 function init_timefile() {
     timefile=${WORKSPACE}/timestamp_boot.txt
     if [ -f ${timefile} ]; then
-        rm -fr $timefile
+        rm -fr ${timefile}
     else
-        touch $timefile
+        touch ${timefile}
     fi
 }
 
@@ -195,14 +181,10 @@ function parse_arch_map() {
 }
 
 function clean_workspace() {
-    set +e
     ##### Finish copying files to the lava-server machine #####
-
-    rm -fr jobs*
-    rm -fr results*
-
-    [ -d ${GIT_DESCRIBE} ] && rm -fr ${GIT_DESCRIBE}
-    set -e
+    rm -fr jobs* || true
+    rm -fr results* || true
+    [ -d ${GIT_DESCRIBE} ] && rm -fr ${GIT_DESCRIBE} || true
 }
 
 function trigger_lava_build() {
@@ -217,22 +199,23 @@ function trigger_lava_build() {
             rm -fr ${JOBS_DIR} ${RESULTS_DIR}
 
             # generate the boot jobs for all the targets
-            if [ "$boot_plan" = "BOOT_SAS" ]  || [ "$boot_plan" = "BOOT_SATA" ]; then
+            if [ "$boot_plan" = "BOOT_SAS" ] || [ "$boot_plan" = "BOOT_SATA" ]; then
+                # TODO : need rewrite the logic by lava2 way to boot from STAT or SAS.
+                # now ti generate to flag boot and sas by the job generate.
                 generate_jobs "boot" $DISTRO
                 [ $? -ne 0 ] && continue
 
                 # create the boot jobs for each target and run all these jobs
                 cd ${JOBS_DIR}
                 ls
-                python ../create_boot_job.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM
-                if [ $? -ne 0 ]; then
+                if ! python ../create_boot_job.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM; then
                     echo "generate the jobs according the board devices error! Aborting"
                     continue
                 fi
 
                 cd ..
-                run_and_move_result "boot" $DISTRO
-                if [ $? -ne 0 ] ;then
+
+                if ! run_and_move_result "boot" $DISTRO ;then
                     python parser.py -d $DISTRO
                     if [ ! -d ${GIT_DESCRIBE}/${RESULTS_DIR}/${DISTRO} ];then
                         mv ${DISTRO} ${GIT_DESCRIBE}/${RESULTS_DIR}/ && continue
@@ -250,19 +233,17 @@ function trigger_lava_build() {
                 rm -fr ${JOBS_DIR} ${RESULTS_DIR}
 
                 generate_jobs ${BOOT_FOR_TEST} $DISTRO "--SasFlag"
-
                 [ $? -ne 0 ] && continue
+
                 cd ${JOBS_DIR}
-                python ../create_boot_job.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM
-                if [ $? -ne 0 ]; then
+                if ! python ../create_boot_job.py --username $LAVA_USER --token $LAVA_TOKEN --server $LAVA_SERVER --stream $LAVA_STREAM; then
                     echo "generate the jobs according the board devices error! Aborting"
                     continue
                 fi
 
                 cd ..
                 if [ -d ${JOBS_DIR} ]; then
-                    run_and_move_result ${BOOT_FOR_TEST} $DISTRO
-                    if [ $? -ne 0 ] ;then
+                    if ! run_and_move_result ${BOOT_FOR_TEST} $DISTRO ;then
                         python parser.py -d $DISTRO
                         if [ ! -d ${GIT_DESCRIBE}/${RESULTS_DIR}/${DISTRO} ];then
                             mv ${DISTRO} ${GIT_DESCRIBE}/${RESULTS_DIR} && continue
@@ -297,12 +278,9 @@ function trigger_lava_build() {
 
                     rm -fr ${JOBS_DIR} ${RESULTS_DIR}
                     # generate the application jobs for the board_types
-                    for app_plan in $APP_PLAN
-                    do
+                    for app_plan in $APP_PLAN; do
                         [[ $app_plan =~ "BOOT" ]] && continue
-
-                        generate_jobs $app_plan $DISTRO
-                        if [ $? -ne 0 ] ;then
+                        if ! generate_jobs $app_plan $DISTRO ;then
                             python parser.py -d $DISTRO
                             if [ ! -d ${GIT_DESCRIBE}/${RESULTS_DIR}/${DISTRO} ];then
                                 mv ${DISTRO} ${GIT_DESCRIBE}/${RESULTS_DIR}/ && continue
@@ -334,6 +312,7 @@ function trigger_lava_build() {
                 fi
 
             else
+                # boot from NFS
                 print_time "the start time of $boot_plan is "
                 rm -fr ${JOBS_DIR} ${RESULTS_DIR}
 
@@ -341,8 +320,7 @@ function trigger_lava_build() {
                 [ $? -ne 0 ] && python parser.py -d $DISTRO && mv $DISTRO ${GIT_DESCRIBE}/${RESULTS_DIR} && continue
 
                 if [ -d ${JOBS_DIR} ]; then
-                    run_and_move_result $boot_plan $DISTRO
-                    if [ $? -ne 0 ] ;then
+                    if ! run_and_move_result $boot_plan $DISTRO ;then
                         python parser.py -d $DISTRO
                         if [ ! -d ${GIT_DESCRIBE}/${RESULTS_DIR}/${DISTRO} ];then
                             mv ${DISTRO} ${GIT_DESCRIBE}/${RESULTS_DIR} && continue
@@ -379,18 +357,17 @@ function collect_result() {
         rm -rf  ${WORKSPACE}/${WHOLE_SUM}
     fi
     cp ${GIT_DESCRIBE}/${RESULTS_DIR}/${WHOLE_SUM} ${WORKSPACE}
-    cp -rf $timefile ${WORKSPACE}||true
-
+    cp -rf ${timefile} ${WORKSPACE} || true
 
     #zip -r ${{GIT_DESCRIBE}}_results.zip ${GIT_DESCRIBE}/*
-    cp -f $timefile ${GIT_DESCRIBE}
+    cp -f ${timefile} ${GIT_DESCRIBE} || true
 
     if [ -d $DES_DIR/${GIT_DESCRIBE}/results ];then
         sudo rm -fr $DES_DIR/${GIT_DESCRIBE}/results
-        sudo rm -fr $DES_DIR/${GIT_DESCRIBE}/$timefile
+        sudo rm -fr $DES_DIR/${GIT_DESCRIBE}/${timefile}
     fi
+
     sudo cp -rf ${GIT_DESCRIBE}/* $DES_DIR
-    [ $? -ne 0 ]&& exit -1
 
     popd    # restore current work directory
 

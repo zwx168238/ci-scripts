@@ -370,7 +370,7 @@ function cp_image() {
         sudo cp -rf binary/$PLATFORM_U/* $PLATFORM_ARCH_DIR/binary
 
         pushd $PLATFORM_ARCH_DIR/binary
-        sudo ln -s ../../${arch[$PLATFORM_L]}/$KERNEL_IMG_FILE ${KERNEL_IMG_FILE}_${PLATFORM}
+        sudo ln -s ../../${arch[$PLATFORM_L]}/$KERNEL_IMG_FILE ${KERNEL_IMG_FILE}_${PLATFORM_U}
         sudo ln -s ../../${arch[$PLATFORM_L]}/$DEPLOY_UTILS_FILE
         sudo ln -s ../../${arch[$PLATFORM_L]}/$MINI_ROOTFS_FILE
         sudo ln -s ../../${arch[$PLATFORM_L]}/$GRUB_IMG_FILE

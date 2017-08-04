@@ -428,7 +428,7 @@ function main() {
     sync_code
     clean_build
 
-    hotfix_download_estuary_defconfig
+    # hotfix_download_estuary_defconfig
 
     do_build
     get_version_info

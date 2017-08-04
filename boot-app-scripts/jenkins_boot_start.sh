@@ -372,12 +372,6 @@ function collect_result() {
     popd    # restore current work directory
 
     cat ${WORKSPACE}/timestamp_boot.txt
-
-    if [ x"$BUILD_STATUS" != x"Successful"  ]; then
-        BUILD_RESULT=${BUILD_STATUS}
-    else
-        BUILD_RESULT=Failure
-    fi
 }
 
 function init_env() {

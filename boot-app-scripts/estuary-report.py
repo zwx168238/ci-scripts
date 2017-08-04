@@ -50,18 +50,6 @@ device_map = {'arndale': ['exynos5250-arndale', 'exynos'],
               'dummy_ssh_d05': ['dummy_ssh_d05', None],
               'kvm': ['x86-kvm', None]}
 
-
-def download_log2html(url):
-    print 'Fetching latest log2html script'
-    try:
-        response = urllib2.urlopen(url, timeout=30)
-    except IOError, e:
-        print 'error fetching %s: %s' % (url, e)
-        exit(1)
-    script = response.read()
-    utils.write_file(script, 'log2html.py', os.getcwd())
-
-
 def parse_yaml(yaml):
     jobs = utils.load_yaml(yaml)
     url = utils.validate_input(jobs['username'], jobs['token'], jobs['server'])
@@ -224,7 +212,6 @@ def get_ip_board_mapping(contents, filename, directory, report_directory):
 def boot_report(config):
     connection, jobs, duration =  parse_yaml(config.get("boot"))
     # TODO: Fix this when multi-lab sync is working
-    #download_log2html(log2html)
     results_directory = os.getcwd() + '/results'
     results = {}
     utils.mkdir(results_directory)

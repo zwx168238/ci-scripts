@@ -52,3 +52,13 @@ actions:
       from: git
       path: distro/ubuntu/ubuntu_smoke.yaml
       name: smoke-tests
+
+    - repository: https://github.com/zwx168238/ci-test-cases
+      from: git
+      path: distro/ubuntu/ubuntu_smoke.yaml
+      name: smoke-tests
+
+    - repository: https://github.com/zwx168238/ci-test-cases
+      from: git
+      path: distro/ubuntu/ubuntu_smoke.yaml
+      name: smoke-tests

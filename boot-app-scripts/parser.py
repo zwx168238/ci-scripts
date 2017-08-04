@@ -34,67 +34,7 @@ total_str = "Total number of test cases: "
 fail_str = "Failed number of test cases: "
 suc_str = "Success number of test cases: "
 
-# write summary for the special kind of test cases in the D02/Ubuntu
-def summary_for_kind(result_dir):
-    for root, dirs, files in os.walk(result_dir):
-        for filename in files:
-            if ip_address == filename:
-                os.remove(os.path.join(root, filename))
-                continue
-            if filename.endswith(whole_summary_name):
-                continue
-            if 'boot' in filename or 'BOOT' in filename:
-                continue
-            if 'summary' in filename:
-                try:
-                    test_case_name = re.search(match_str, filename).group(0)
-                except Exception:
-                    test_case_name_1 = re.findall(match_str_short, filename)
-                    if test_case_name_1:
-                        test_case_name = test_case_name[0]
-                test_kind = test_case_name
-                if test_kind:
-                    board_type = filename.split(test_kind)[0][:-1]
-                else:
-                    board_type_all = filename.split(summary_post)
-                    if board_type_all:
-                        board_type = board_type_all[0]
-                if test_kind and board_type:
-                    board_class = os.path.join(parser_result, board_type_pre + board_type)
-                    if not os.path.exists(parser_result):
-                        os.mkdir(parser_result)
-                    # create the directory for the special kind of board
-                    if not os.path.exists(board_class):
-                        os.makedirs(board_class)
-                    # create the test for each kind test, each file with one file
-                    test_kind_name = os.path.join(board_class, test_kind)
-                    if os.path.exists(test_kind_name):
-                        os.remove(test_kind_name)
-                    fail_cases = []
-                    total_num = 0
-                    with open(test_kind_name, 'ab') as fd:
-                        with open(os.path.join(root, filename), 'rb') as rfd:
-                            contents = rfd.read()
-                        fd.write(board_type + '_' + test_kind + '\n')
-                        total_num = len(re.findall("job_id", contents))
-                        fail_num = 0
-                        for case in contents.split('\n\n'):
-                            test_case = re.findall("=+\s*\n(.*)\s*\n=+", case, re.DOTALL)
-                            job_id = re.findall("(job_id.*)", case)
-                            if test_case and job_id:
-                                testname = test_case[0]
-                                fail_flag = re.findall('FAIL', case)
-                                if fail_flag:
-                                    fail_num += 1
-                                    fail_cases.append(job_id[0] + '\n' + testname + '\t\t' + 'FAIL\n')
-                        fd.write(total_str + str(total_num) + '\n')
-                        fd.write(fail_str + str(fail_num) + '\n')
-                        fd.write(suc_str + str(total_num - fail_num) + '\n')
-                        if len(fail_cases):
-                            fd.write("\n================Failed cases===============\n")
-                        for i in range(0, len(fail_cases)):
-                            fd.write(fail_cases[i])
-
+# write summary for the special kind of test cases in the D05/Ubuntu
 def write_summary_for_app(result_dir):
     dic_app_cases = {}
     # write summary for app
@@ -232,19 +172,7 @@ def parser_all_files(result_dir):
     summary_path = os.path.join(result_dir, whole_summary_name)
     if os.path.exists(summary_path):
         os.remove(summary_path)
-    # get kind classfication in each file
-    true_parser_path = os.path.join(result_dir, parser_result)
-    if os.path.exists(true_parser_path):
-        shutil.rmtree(true_parser_path)
-    if os.path.exists(parser_result):
-        shutil.rmtree(parser_result)
-    summary_for_kind(result_dir)
-    # summary each file for each kind of board
-    if os.path.exists(parser_result):
-        summary_for_board(result_dir, parser_result)
-        shutil.move(parser_result, result_dir)
-    else:
-        summary_for_board(result_dir, result_dir)
+    summary_for_board(result_dir, result_dir)
 
 def print_dic(dic_app, summary_file):
     if len(dic_app.keys()) <= 0:

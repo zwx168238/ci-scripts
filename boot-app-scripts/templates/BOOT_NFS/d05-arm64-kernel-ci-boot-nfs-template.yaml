@@ -55,10 +55,10 @@ actions:
 
     - repository: https://github.com/zwx168238/ci-test-cases
       from: git
-      path: distro/ubuntu/ubuntu_smoke.yaml
-      name: smoke-tests
+      path: distro/ubuntu/smoke-tests-basic.yaml
+      name: smoke-tests-basic
 
     - repository: https://github.com/zwx168238/ci-test-cases
       from: git
       path: distro/ubuntu/ubuntu_smoke.yaml
-      name: smoke-tests
+      name: smoke-tests2

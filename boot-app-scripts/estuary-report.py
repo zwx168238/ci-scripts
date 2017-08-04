@@ -147,8 +147,8 @@ def get_plans(directory, filename):
                        return item
     return ''
 
-# add by wuyanjun
-# parser the test result
+# add by zhangbp0704
+# parser the test result by lava v2
 def parser_and_get_result(contents, filename, directory, report_directory, connection):
     summary_post = '_summary.txt'
     if filename.endswith('.txt'):

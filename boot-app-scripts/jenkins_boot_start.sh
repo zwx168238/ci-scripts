@@ -182,9 +182,7 @@ function parse_arch_map() {
 
 function clean_workspace() {
     ##### Finish copying files to the lava-server machine #####
-    rm -fr jobs* || true
-    rm -fr results* || true
-    [ -d ${GIT_DESCRIBE} ] && rm -fr ${GIT_DESCRIBE} || true
+    rm -rf ${CI_SCRIPTS_DIR}/uef* test_result.tar.gz||true
 }
 
 function trigger_lava_build() {
@@ -333,8 +331,6 @@ function trigger_lava_build() {
                 print_time "the end time of $boot_plan is "
             fi
         done
-        python parser.py -d $DISTRO
-        mv $DISTRO ${GIT_DESCRIBE}/${RESULTS_DIR}
     done
     popd
 }
@@ -372,6 +368,7 @@ function collect_result() {
     popd    # restore current work directory
 
     cat ${WORKSPACE}/timestamp_boot.txt
+    cat ${WORKSPACE}/${WHOLE_SUM}
 }
 
 function init_env() {

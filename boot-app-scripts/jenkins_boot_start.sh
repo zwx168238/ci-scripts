@@ -88,7 +88,6 @@ function run_and_report_jobs() {
         fi
 
         python estuary-report.py --boot ${JOBS_DIR}/${RESULTS_DIR}/POLL --lab $LAVA_USER
-
         if [ ! -d ${RESULTS_DIR} ]; then
             echo "running jobs error! Aborting"
             return -1
@@ -116,7 +115,6 @@ function judge_pass_or_not() {
 function run_and_move_result() {
     test_name=$1
     dest_dir=$2
-
     ret_val=0
 
     if ! run_and_report_jobs ;then
@@ -181,8 +179,8 @@ function parse_arch_map() {
 }
 
 function clean_workspace() {
-    ##### Finish copying files to the lava-server machine #####
-    rm -rf ${CI_SCRIPTS_DIR}/uef* test_result.tar.gz||true
+    ##### remove all file from the workspace #####
+    rm -rf ${WORKSPACE}/*||true
 }
 
 function trigger_lava_build() {
@@ -315,7 +313,6 @@ function trigger_lava_build() {
                 rm -fr ${JOBS_DIR} ${RESULTS_DIR}
 
                 generate_jobs $boot_plan $DISTRO
-                [ $? -ne 0 ] && python parser.py -d $DISTRO && mv $DISTRO ${GIT_DESCRIBE}/${RESULTS_DIR} && continue
 
                 if [ -d ${JOBS_DIR} ]; then
                     if ! run_and_move_result $boot_plan $DISTRO ;then
@@ -325,12 +322,19 @@ function trigger_lava_build() {
                         else
                             cp -fr ${DISTRO}/* ${GIT_DESCRIBE}/${RESULTS_DIR}/${DISTRO}/ && continue
                         fi
+                    else
+                        mv ./test_suite.txt ${DISTRO}
                     fi
                 fi
-
                 print_time "the end time of $boot_plan is "
             fi
         done
+        python parser.py -d $DISTRO
+        if [ ! -d $GIT_DESCRIBE/${RESULTS_DIR}/${DISTRO} ];then
+            mv ${DISTRO} $GIT_DESCRIBE/${RESULTS_DIR} && continue
+        else
+            cp -fr ${DISTRO}/* $GIT_DESCRIBE/${RESULTS_DIR}/${DISTRO}/ && continue
+        fi
     done
     popd
 }
@@ -372,7 +376,6 @@ function collect_result() {
 }
 
 function init_env() {
-    WORK_DIR=${WORKSPACE}/local
     CI_SCRIPTS_DIR=${WORKSPACE}/local/ci-scripts
 }
 

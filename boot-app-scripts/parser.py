@@ -82,7 +82,7 @@ def write_summary_for_app(result_dir):
                 dic_app_cases[board_type] = [total_num_case, fail_num_case, suc_num_case]
     return dic_app_cases
 
-def write_summary_for_boot(boot_dir, dic_app_case):
+def write_summary_for_boot(boot_dir):
     # write summary for boot
     dic_boot_num = {}
     for root, dirs, files in os.walk(boot_dir):
@@ -159,7 +159,7 @@ def sum_of_dic(dic1, dic2):
 
 def summary_for_board(boot_dir, result_dir):
     dic_app_case = write_summary_for_app(result_dir)
-    dic_boot_case = write_summary_for_boot(boot_dir, dic_app_case)
+    dic_boot_case = write_summary_for_boot(boot_dir)
     dic_sum = sum_of_dic(dic_app_case, dic_boot_case)
     for board in dic_app_case.keys():
         board_summary_name = board_pre + board
@@ -258,6 +258,7 @@ def summary_for_apps(summary_dir, summary_file):
     print_dic(dic_app, summary_file)
     print dic_app
     return (total_num_app, fail_num_app, suc_num_app)
+
 
 def summary_all_files(summary_dir):
     summary_file = os.path.join(summary_dir, whole_summary_name)

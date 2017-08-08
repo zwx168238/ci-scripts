@@ -65,7 +65,6 @@ def validate_input(username, token, server):
         exit(1)
     return url.scheme + '://' + username + ':' + token + '@' + url.netloc + url.path
 
-
 def connect(url):
     try:
         print "Connecting to Server..."

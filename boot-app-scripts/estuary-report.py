@@ -5,6 +5,7 @@ import os
 import urlparse
 import xmlrpclib
 import json
+import yaml
 import argparse
 import time
 import subprocess
@@ -17,6 +18,11 @@ from lib import configuration
 from lib import utils
 
 #log2html = 'https://git.linaro.org/people/kevin.hilman/build-scripts.git/blob_plain/HEAD:/log2html.py'
+#for test report
+whole_summary_name = 'whole_summary.txt'
+total_str = "Total number of test cases: "
+fail_str = "Failed number of test cases: "
+suc_str = "Success number of test cases: "
 
 device_map = {'arndale': ['exynos5250-arndale', 'exynos'],
               'snow': ['exynos5250-snow', 'exynos'],
@@ -62,23 +68,6 @@ def parse_yaml(yaml):
     jobs.pop('server')
     return connection, jobs, duration
 
-def push(method, url, data, headers):
-    retry = True
-    while retry:
-        if method == 'POST':
-            response = requests.post(url, data=data, headers=headers)
-        elif method == 'PUT':
-            response = requests.put(url, data=data, headers=headers)
-        else:
-            print "ERROR: unsupported method"
-            exit(1)
-        if response.status_code != 500:
-            retry = False
-            print "OK"
-        else:
-            time.sleep(10)
-            print response.content
-
 # add by wuyanjun
 def get_board_type(directory, filename):
     strinfo = re.compile('.txt')
@@ -120,19 +109,6 @@ def get_board_type(directory, filename):
         return board_type
     return ''
 
-# add by wuyanjun
-def get_board_instance(directory, filename):
-    strinfo = re.compile('.txt')
-    json_name = strinfo.sub('.json',filename)
-    #with open(os.path.join(directory, json_name), "r") as lines:
-    test_info = utils.load_json(os.path.join(directory, json_name))
-    if 'board_instance' in test_info.keys():
-            board_instance = test_info['board_instance']
-            return board_instance
-    return ''
-
-# add by wuyanjun
-# we use the plans all by 'UPPER CASE'
 def get_plans(directory, filename):
     m = re.findall('[A-Z]+_?[A-Z]*', filename)
     if m:
@@ -147,8 +123,6 @@ def get_plans(directory, filename):
                        return item
     return ''
 
-# add by wuyanjun
-# parser the test result
 def parser_and_get_result(contents, filename, directory, report_directory, connection):
     summary_post = '_summary.txt'
     if filename.endswith('.txt'):
@@ -162,52 +136,117 @@ def parser_and_get_result(contents, filename, directory, report_directory, conne
             summary = plan + summary_post
         else:
             summary = 'summary.txt'
-        if 'dummy_ssh' in filename or 'dummy-ssh' in filename:
-            with open(os.path.join(report_directory, summary), 'a') as sf:
-                job_id = filename.split("_")[-1].split(".")[0]
-                with open(os.path.join(directory, filename)) as fp:
-                    lines = fp.readlines()
-                write_flag = 0
-                # for job which has been run successfully
-                with open(os.path.join(directory, filename)) as fp:
-                    contents = fp.read()
-                if re.search("=+", contents) and re.search('Test.*?case.*?Result', contents):
-                    for i in range(0, len(lines)):
-                        line = lines[i]
-                        if write_flag == 1:
-                            sf.write(line)
-                            continue
-                        if re.search("=+", line) and re.search("=+", lines[i+2]) and re.search('Test.*?case.*?Result', lines[i+3]):
+        with open(os.path.join(report_directory, summary), 'a') as sf:
+            job_id = filename.split("_")[-1].split(".")[0]
+            with open(os.path.join(directory, filename)) as fp:
+                lines = fp.readlines()
+            write_flag = 0
+            # for job which has been run successfully
+            with open(os.path.join(directory, filename)) as fp:
+                contents = fp.read()
+            if re.search("=+", contents) and re.search('Test.*?case.*?Result', contents):
+                for i in range(0, len(lines)):
+                    line = lines[i]
+                    if write_flag == 1:
+                        sf.write(line)
+                        continue
+                    if re.search("=+", line) and re.search("=+", lines[i+2]) and re.search('Test.*?case.*?Result', lines[i+3]):
                             write_flag = 1
                             sf.write("job_id is: %s\n" % job_id)
                             sf.write(line)
                     sf.write('\n')
-                # for jobs which is Incomplete
-                else:
-                    job_details = connection.scheduler.job_details(job_id)
-                    job_name = re.findall('testdef.*\/(.*?)\.yaml', job_details['original_definition'])
-                    sf.write("job_id is: %s\n" % job_id)
-                    sf.write("="*13 + "\n")
-                    sf.write(' '.join(job_name) + "\n")
-                    sf.write("="*13 + "\n")
-                    sf.write(' '.join(job_name) + "_test_cases\t\tFAIL\n\n")
+            # for jobs which is Incomplete
+            else:
+                job_details = connection.scheduler.job_details(job_id)
+                job_name = re.findall('testdef.*\/(.*?)\.yaml', job_details['original_definition'])
+                sf.write("job_id is: %s\n" % job_id)
+                sf.write("="*13 + "\n")
+                sf.write(' '.join(job_name) + "\n")
+                sf.write("="*13 + "\n")
+                sf.write(' '.join(job_name) + "_test_cases\t\tFAIL\n\n")
 
-# add by wuyanjun
-# get the ip address of boards for the application jobs
-def get_ip_board_mapping(contents, filename, directory, report_directory):
-    ip_address = 'device_ip_type.txt'
-    ip_address_path = os.path.join(report_directory, ip_address)
-    with open(ip_address_path, 'a') as sf:
-        match = re.findall('addr:(\d+\.\d+\.\d+\.\d+)\s+Bcast', contents)
-        if not match:
-            match_array = re.findall('inet\s+(\d+\.\d+\.\d+\.\d+).*brd', contents)
-            if len(match_array):
-                match = match_array
-        if match:
-            board_type = get_board_type(directory, filename)
-            board_instance = get_board_instance(directory, filename)
-            sf.write(board_type + '\t' + board_instance +
-                '\t' + match[-1] + '\n' )
+# add by zhangbp0704
+# parser the test result by lava v2
+def generate_test_report(job_id, connection):
+    print "--------------now begin get testjob: %s result ------------------------------" % (job_id)
+
+    testjob_results = connection.results.get_testjob_results_yaml(job_id)
+    # print testsuite_results
+    test = yaml.load(testjob_results)
+    suite_list = [] #all test suite list
+    case_dict = {} #testcast dict value like 'smoke-test':[test-case1,test-case2,test-case3]
+    boot_total = 0
+    boot_success = 0
+    boot_fail = 0
+    test_total = 0
+    test_success = 0
+    test_fail = 0
+
+    #get all the test suite list from get_testjob_results_yaml
+    for item in test:
+        if suite_list.count(item['suite']) == 0:
+            suite_list.append(item['suite'])
+
+    #inital a no value dict
+    for suite in suite_list:
+        case_dict[suite] = []
+
+    #set all the value in dict
+    for item in test:
+        case_dict[item['suite']].append(item)
+
+    for key in case_dict.keys():
+        if key == 'lava':
+            for item in case_dict[key]:
+                if item['result'] == 'pass':
+                    boot_total += 1
+                    boot_success += 1
+                elif item['result'] == 'fail':
+                    boot_total += 1
+                    boot_fail += 1
+                else:
+                    boot_total += 1
+        else:
+            for item in case_dict[key]:
+                if item['result'] == 'pass':
+                    test_total += 1
+                    test_success += 1
+                elif item['result'] == 'fail':
+                    test_total += 1
+                    test_fail += 1
+                else:
+                    test_total += 1
+
+    print 'boot total : ' + str(boot_total)
+    print 'boot success: ' + str(boot_success)
+    print 'boot fail: ' + str(boot_fail)
+    print 'test total : ' + str(test_total)
+    print 'test success: ' + str(test_success)
+    print 'test fail: ' + str(test_fail)
+
+    #try to write summary file
+    summary_dir = os.getcwd()
+    summary_file = os.path.join(summary_dir, whole_summary_name)
+    if os.path.exists(summary_file):
+        os.remove(summary_file)
+    with open(summary_file, 'w') as wfp:
+        total_num = 0
+        suc_num = 0
+        fail_num = 0
+        wfp.write("*" * 20 + " BOOT SUMMARY START " + "*" * 20 + '\n')
+        wfp.write("\n" + total_str + str(boot_total))
+        wfp.write("\n" + fail_str + str(boot_fail))
+        wfp.write("\n" + suc_str + str(boot_success))
+        wfp.write("\n" + "*" * 20 + " BOOT SUMMARY END" + "*" * 20 + '\n')
+
+    with open(summary_file, "ab") as wfp:
+        wfp.write("*" * 20 + " SUMMARY TESTCASE START " + "*" * 20 + '\n')
+        wfp.write("\n" + total_str + str(test_total))
+        wfp.write("\n" + fail_str + str(test_fail))
+        wfp.write("\n" + suc_str + str(test_success))
+        wfp.write("\n" + "*" * 20 + " SUMMARY END " + "*" * 20 + '\n')
+
+    print "--------------now end get testjob: %s result ------------------------------" % (job_id)
 
 def boot_report(config):
     connection, jobs, duration =  parse_yaml(config.get("boot"))
@@ -270,13 +309,6 @@ def boot_report(config):
         bundle = jobs[job_id]['bundle']
         if not device_type:
             device_type = job_details['_actual_device_cache']['device_type_id']
-        if bundle is None and device_type == 'dynamic-vm':
-            host_job_id = job_id.replace('.1', '.0')
-            bundle = jobs[host_job_id]['bundle']
-            if bundle is None:
-                print '%s bundle is empty, skipping...' % device_type
-                continue
-        # Retrieve the log file
         try:
             binary_job_file = connection.scheduler.job_output(job_id)
         except xmlrpclib.Fault:
@@ -309,80 +341,16 @@ def boot_report(config):
             if 'rtc-efi rtc-efi: setting system clock to' in line:
                 if device_type == 'dynamic-vm':
                     efi_rtc = True
-
-        # Retrieve bundle
-        if bundle is not None:
-            json_bundle = connection.dashboard.get(bundle)
-            bundle_data = json.loads(json_bundle['content'])
-            # Get the boot data from LAVA
-            for test_results in bundle_data['test_runs']:
-                # Check for the LAVA self boot test
-                if test_results['test_id'] == 'lava':
-                    for test in test_results['test_results']:
-                        # TODO for compat :(
-                        if test['test_case_id'] == 'kernel_boot_time':
-                            kernel_boot_time = test['measurement']
-                        if test['test_case_id'] == 'test_kernel_boot_time':
-                            kernel_boot_time = test['measurement']
-                    bundle_attributes = bundle_data['test_runs'][-1]['attributes']
-            if utils.in_bundle_attributes(bundle_attributes, 'kernel.defconfig'):
-                print bundle_attributes['kernel.defconfig']
-            if utils.in_bundle_attributes(bundle_attributes, 'target'):
-                board_instance = bundle_attributes['target']
-            if utils.in_bundle_attributes(bundle_attributes, 'kernel.defconfig'):
-                kernel_defconfig = bundle_attributes['kernel.defconfig']
-                defconfig_list = kernel_defconfig.split('-')
-                #arch = defconfig_list[0]
-                arch = defconfig_list[-1]
-                # Remove arch
-                defconfig_list.pop(0)
-                kernel_defconfig_full = '-'.join(defconfig_list)
-                kernel_defconfig_base = ''.join(kernel_defconfig_full.split('+')[:1])
-                if kernel_defconfig_full == kernel_defconfig_base:
-                    kernel_defconfig_full = None
-            if utils.in_bundle_attributes(bundle_attributes, 'kernel.version'):
-                kernel_version = bundle_attributes['kernel.version']
-            if utils.in_bundle_attributes(bundle_attributes, 'device.tree'):
-                device_tree = bundle_attributes['device.tree']
-            if utils.in_bundle_attributes(bundle_attributes, 'kernel.endian'):
-                kernel_endian = bundle_attributes['kernel.endian']
-            if utils.in_bundle_attributes(bundle_attributes, 'platform.fastboot'):
-                fastboot = bundle_attributes['platform.fastboot']
-            if kernel_boot_time is None:
-                if utils.in_bundle_attributes(bundle_attributes, 'kernel-boot-time'):
-                    kernel_boot_time = bundle_attributes['kernel-boot-time']
-            if utils.in_bundle_attributes(bundle_attributes, 'kernel.tree'):
-                kernel_tree = bundle_attributes['kernel.tree']
-            if utils.in_bundle_attributes(bundle_attributes, 'kernel-addr'):
-                kernel_addr = bundle_attributes['kernel-addr']
-            if utils.in_bundle_attributes(bundle_attributes, 'initrd-addr'):
-                initrd_addr = bundle_attributes['initrd-addr']
-            if utils.in_bundle_attributes(bundle_attributes, 'dtb-addr'):
-                dtb_addr = bundle_attributes['dtb-addr']
-            if utils.in_bundle_attributes(bundle_attributes, 'dtb-append'):
-                dtb_append = bundle_attributes['dtb-append']
-            if utils.in_bundle_attributes(bundle_attributes, 'boot_retries'):
-                boot_retries = int(bundle_attributes['boot_retries'])
-            if utils.in_bundle_attributes(bundle_attributes, 'test.plan'):
-                test_tmp = bundle_attributes['test.plan']
-                if test_tmp:
-                    test_plan = test_tmp
-        else:
-            if not kernel_defconfig or not kernel_version or not kernel_tree:
-              try:
-                  job_metadata_info = connection.results.get_testjob_metadata(job_id)
-                  kernel_defconfig = utils.get_value_by_key(job_metadata_info,'kernel_defconfig')
-                  kernel_version = utils.get_value_by_key(job_metadata_info,'kernel_version')
-                  kernel_tree = utils.get_value_by_key(job_metadata_info,'kernel_tree')
-                  kernel_endian = utils.get_value_by_key(job_metadata_info,'kernel_endian')
-                  device_tree = utils.get_value_by_key(job_metadata_info,'device_tree')
-              except Exception:
+        if not kernel_defconfig or not kernel_version or not kernel_tree:
+            try:
+                job_metadata_info = connection.results.get_testjob_metadata(job_id)
+                kernel_defconfig = utils.get_value_by_key(job_metadata_info,'kernel_defconfig')
+                kernel_version = utils.get_value_by_key(job_metadata_info,'kernel_version')
+                kernel_tree = utils.get_value_by_key(job_metadata_info,'kernel_tree')
+                kernel_endian = utils.get_value_by_key(job_metadata_info,'kernel_endian')
+                device_tree = utils.get_value_by_key(job_metadata_info,'device_tree')
+            except Exception:
                 continue
-        # Check if we found efi-rtc
-        if test_plan == 'boot-kvm-uefi' and not efi_rtc:
-            if device_type == 'dynamic-vm':
-                boot_failure_reason = 'Unable to read EFI rtc'
-                result = 'FAIL'
 
         # Record the boot log and result
         # TODO: Will need to map device_types to dashboard device types
@@ -480,10 +448,9 @@ def boot_report(config):
             json_file = 'boot-%s.json' % (platform_name + job_name + '_' + job_id)
             utils.write_json(json_file, directory, boot_meta)
             # add by wuyanjun
-            # add the ip device mapping
-            get_ip_board_mapping(job_file, log, directory, report_directory)
             parser_and_get_result(job_file, log, directory, report_directory, connection)
-
+            #try to generate test_summary
+            generate_test_report(job_id, connection)
     if results and kernel_tree and kernel_version:
         print 'Creating summary for %s' % (kernel_version)
         boot = '%s-boot-report.txt' % (kernel_version)
@@ -564,6 +531,7 @@ def boot_report(config):
                                                                         result['job_name'],
                                                                         result['result']))
 
+
 def main(args):
     config = configuration.get_config(args)
 
@@ -573,12 +541,8 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", help="configuration for the LAVA server")
-    parser.add_argument("--section", default="default", help="section in the LAVA config file")
     parser.add_argument("--boot", help="creates a kernel-ci boot report from a given json file")
     parser.add_argument("--lab", help="lab id")
-    parser.add_argument("--api", help="api url")
-    parser.add_argument("--token", help="authentication token")
-    parser.add_argument("--email", help="email address to send report to")
+
     args = vars(parser.parse_args())
     main(args)

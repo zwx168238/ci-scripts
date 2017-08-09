@@ -7,7 +7,6 @@ import json
 import yaml
 import ssl
 
-
 def write_file(file, name, directory):
     with open(os.path.join(directory, name), 'w') as f:
         f.write(file)
@@ -64,7 +63,6 @@ def validate_input(username, token, server):
         print "LAVA Server URL must end with /RPC2"
         exit(1)
     return url.scheme + '://' + username + ':' + token + '@' + url.netloc + url.path
-
 
 def connect(url):
     try:

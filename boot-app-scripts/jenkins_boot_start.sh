@@ -125,12 +125,9 @@ function run_and_move_result() {
         ret_val=-1
     fi
 
-    [ -d ${JOBS_DIR} ] && mv ${JOBS_DIR} ${JOBS_DIR}_${test_name}
-    [ -d ${RESULTS_DIR} ] && mv ${RESULTS_DIR} ${RESULTS_DIR}_${test_name}
-
     [ ! -d ${dest_dir} ] && mkdir -p ${dest_dir}
-    [ -d ${JOBS_DIR}_${test_name} ] && mv ${JOBS_DIR}_${test_name} ${dest_dir}
-    [ -d ${RESULTS_DIR}_${test_name} ] && mv ${RESULTS_DIR}_${test_name} ${dest_dir}
+    [ -d ${JOBS_DIR} ] && mv ${JOBS_DIR} ${dest_dir}/${JOBS_DIR}_${test_name}
+    [ -d ${RESULTS_DIR} ] && mv ${RESULTS_DIR} ${dest_dir}/${RESULTS_DIR}_${test_name}
 
     if [ "$ret_val" -ne 0 ]; then
         return -1
@@ -180,7 +177,8 @@ function parse_arch_map() {
 
 function clean_workspace() {
     ##### remove all file from the workspace #####
-    rm -rf ${WORKSPACE}/*||true
+    rm -rf ${CI_SCRIPTS_DIR}/uef* test_result.tar.gz||true
+    rm -rf ${WORKSPACE}/*.txt||true
 }
 
 function trigger_lava_build() {
@@ -316,20 +314,16 @@ function trigger_lava_build() {
 
                 if [ -d ${JOBS_DIR} ]; then
                     if ! run_and_move_result $boot_plan $DISTRO ;then
-                        python parser.py -d $DISTRO
                         if [ ! -d ${GIT_DESCRIBE}/${RESULTS_DIR}/${DISTRO} ];then
                             mv ${DISTRO} ${GIT_DESCRIBE}/${RESULTS_DIR} && continue
                         else
                             cp -fr ${DISTRO}/* ${GIT_DESCRIBE}/${RESULTS_DIR}/${DISTRO}/ && continue
                         fi
-                    else
-                        mv ./test_suite.txt ${DISTRO}
                     fi
                 fi
                 print_time "the end time of $boot_plan is "
             fi
         done
-        python parser.py -d $DISTRO
         if [ ! -d $GIT_DESCRIBE/${RESULTS_DIR}/${DISTRO} ];then
             mv ${DISTRO} $GIT_DESCRIBE/${RESULTS_DIR} && continue
         else
@@ -345,10 +339,6 @@ function collect_result() {
     DES_DIR=${FTP_DIR}/${TREE_NAME}/${GIT_DESCRIBE}/
     [ ! -d $DES_DIR ] && echo "Don't have the images and dtbs" && exit -1
 
-    pushd ${GIT_DESCRIBE}
-    python ../parser.py -s ${RESULTS_DIR}
-    popd
-
     tar czf test_result.tar.gz ${GIT_DESCRIBE}/*
     cp test_result.tar.gz  ${WORKSPACE}
 
@@ -356,7 +346,8 @@ function collect_result() {
     if [  -e  ${WORKSPACE}/${WHOLE_SUM} ]; then
         rm -rf  ${WORKSPACE}/${WHOLE_SUM}
     fi
-    cp ${GIT_DESCRIBE}/${RESULTS_DIR}/${WHOLE_SUM} ${WORKSPACE}
+    mv ${CI_SCRIPTS_DIR}/boot-app-scripts/${WHOLE_SUM} ${GIT_DESCRIBE}/${RESULTS_DIR}/${WHOLE_SUM}
+    cp ${GIT_DESCRIBE}/${RESULTS_DIR}/${WHOLE_SUM} ${WORKSPACE}/${WHOLE_SUM}
     cp -rf ${timefile} ${WORKSPACE} || true
 
     #zip -r ${{GIT_DESCRIBE}}_results.zip ${GIT_DESCRIBE}/*
@@ -371,7 +362,7 @@ function collect_result() {
 
     popd    # restore current work directory
 
-    cat ${WORKSPACE}/timestamp_boot.txt
+    cat ${timefile}
     cat ${WORKSPACE}/${WHOLE_SUM}
 }
 

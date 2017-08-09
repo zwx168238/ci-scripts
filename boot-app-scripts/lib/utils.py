@@ -7,7 +7,6 @@ import json
 import yaml
 import ssl
 
-
 def write_file(file, name, directory):
     with open(os.path.join(directory, name), 'w') as f:
         f.write(file)

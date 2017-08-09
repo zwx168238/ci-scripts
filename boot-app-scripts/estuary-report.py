@@ -5,6 +5,7 @@ import os
 import urlparse
 import xmlrpclib
 import json
+import yaml
 import argparse
 import time
 import subprocess
@@ -17,6 +18,11 @@ from lib import configuration
 from lib import utils
 
 #log2html = 'https://git.linaro.org/people/kevin.hilman/build-scripts.git/blob_plain/HEAD:/log2html.py'
+#for test report
+whole_summary_name = 'whole_summary.txt'
+total_str = "Total number of test cases: "
+fail_str = "Failed number of test cases: "
+suc_str = "Success number of test cases: "
 
 device_map = {'arndale': ['exynos5250-arndale', 'exynos'],
               'snow': ['exynos5250-snow', 'exynos'],
@@ -117,8 +123,6 @@ def get_plans(directory, filename):
                        return item
     return ''
 
-# add by zhangbp0704
-# parser the test result by lava v2
 def parser_and_get_result(contents, filename, directory, report_directory, connection):
     summary_post = '_summary.txt'
     if filename.endswith('.txt'):
@@ -160,6 +164,89 @@ def parser_and_get_result(contents, filename, directory, report_directory, conne
                 sf.write(' '.join(job_name) + "\n")
                 sf.write("="*13 + "\n")
                 sf.write(' '.join(job_name) + "_test_cases\t\tFAIL\n\n")
+
+# add by zhangbp0704
+# parser the test result by lava v2
+def generate_test_report(job_id, connection):
+    print "--------------now begin get testjob: %s result ------------------------------" % (job_id)
+
+    testjob_results = connection.results.get_testjob_results_yaml(job_id)
+    # print testsuite_results
+    test = yaml.load(testjob_results)
+    suite_list = [] #all test suite list
+    case_dict = {} #testcast dict value like 'smoke-test':[test-case1,test-case2,test-case3]
+    boot_total = 0
+    boot_success = 0
+    boot_fail = 0
+    test_total = 0
+    test_success = 0
+    test_fail = 0
+
+    #get all the test suite list from get_testjob_results_yaml
+    for item in test:
+        if suite_list.count(item['suite']) == 0:
+            suite_list.append(item['suite'])
+
+    #inital a no value dict
+    for suite in suite_list:
+        case_dict[suite] = []
+
+    #set all the value in dict
+    for item in test:
+        case_dict[item['suite']].append(item)
+
+    for key in case_dict.keys():
+        if key == 'lava':
+            for item in case_dict[key]:
+                if item['result'] == 'pass':
+                    boot_total += 1
+                    boot_success += 1
+                elif item['result'] == 'fail':
+                    boot_total += 1
+                    boot_fail += 1
+                else:
+                    boot_total += 1
+        else:
+            for item in case_dict[key]:
+                if item['result'] == 'pass':
+                    test_total += 1
+                    test_success += 1
+                elif item['result'] == 'fail':
+                    test_total += 1
+                    test_fail += 1
+                else:
+                    test_total += 1
+
+    print 'boot total : ' + str(boot_total)
+    print 'boot success: ' + str(boot_success)
+    print 'boot fail: ' + str(boot_fail)
+    print 'test total : ' + str(test_total)
+    print 'test success: ' + str(test_success)
+    print 'test fail: ' + str(test_fail)
+
+    #try to write summary file
+    summary_dir = os.getcwd()
+    summary_file = os.path.join(summary_dir, whole_summary_name)
+    if os.path.exists(summary_file):
+        os.remove(summary_file)
+    with open(summary_file, 'w') as wfp:
+        total_num = 0
+        suc_num = 0
+        fail_num = 0
+        wfp.write("*" * 20 + " BOOT SUMMARY START " + "*" * 20 + '\n')
+        wfp.write("\n" + total_str + str(boot_total))
+        wfp.write("\n" + fail_str + str(boot_fail))
+        wfp.write("\n" + suc_str + str(boot_success))
+        wfp.write("\n" + "*" * 20 + " BOOT SUMMARY END" + "*" * 20 + '\n')
+
+    with open(summary_file, "ab") as wfp:
+        wfp.write("*" * 20 + " SUMMARY TESTCASE START " + "*" * 20 + '\n')
+        wfp.write("\n" + total_str + str(test_total))
+        wfp.write("\n" + fail_str + str(test_fail))
+        wfp.write("\n" + suc_str + str(test_success))
+        wfp.write("\n" + "*" * 20 + " SUMMARY END " + "*" * 20 + '\n')
+
+    print "--------------now end get testjob: %s result ------------------------------" % (job_id)
 
 def boot_report(config):
     connection, jobs, duration =  parse_yaml(config.get("boot"))
@@ -361,9 +448,9 @@ def boot_report(config):
             json_file = 'boot-%s.json' % (platform_name + job_name + '_' + job_id)
             utils.write_json(json_file, directory, boot_meta)
             # add by wuyanjun
-            # add the ip device mapping
             parser_and_get_result(job_file, log, directory, report_directory, connection)
-
+            #try to generate test_summary
+            generate_test_report(job_id, connection)
     if results and kernel_tree and kernel_version:
         print 'Creating summary for %s' % (kernel_version)
         boot = '%s-boot-report.txt' % (kernel_version)

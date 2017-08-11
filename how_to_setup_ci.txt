@@ -15,15 +15,11 @@ The file server is mainly used to store the bianry files which will be used for 
 The lava server needs the tftp service to make the board can boot successfully. So the tftp service need to deploy in the LAVA instance. That means you need to install dhcp service, nfs service and ftp service.
 
 About the Estuary jobs: 
-  estuary-trigger: For automatically trigger the build of estuary
   estuary-build: to build all the platforms and all distros
-  estuary-build-complete: After building, push all the information about build to the kernelci backend database. If we don't use the kernelci to read the results. then we don't need this job.
   estaury-boot: Do the boot as much as possible. And run the test cases automatically and collect the test results. Then push the results to the file server
     
-    estuary-trigger
-        |
-        |
-        |           push distro, toolchain, binaries
+
+                   push distro, toolchain, binaries
     estuary-build ------------------------------------->  file server
         |
         |
